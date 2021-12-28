@@ -1,0 +1,8 @@
+venv
+.idea
+__pycache__
+*.orig
+*.pyc
+i18n
+.DS_Store
+github_deploy_key.out
