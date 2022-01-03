@@ -8,10 +8,8 @@
 #
 # -----------------------------------------------------------
 
-from qgis.PyQt.QtCore import QObject
-from qgis.gui import QgsAbstractRelationEditorWidgetFactory
+from qgis.gui import QgsAbstractRelationEditorWidgetFactory, QgsRelationEditorConfigWidget
 from enhanced_relation_editor_widget.gui.enhanced_relation_editor_widget import EnhancedRelationEditorWidget
-from enhanced_relation_editor_widget.gui.enhanced_relation_editor_widget_config_widget import EnhancedRelationEditorWidgetConfigWidget
 
 WIDGET_TYPE = "enhanced_relation_editor_widget"
 
@@ -27,4 +25,4 @@ class EnhancedRelationEditorWidgetFactory(QgsAbstractRelationEditorWidgetFactory
         return EnhancedRelationEditorWidget(config, parent)
 
     def configWidget(self, relation, parent):
-        return EnhancedRelationEditorWidgetConfigWidget(relation, parent)
+        return QgsRelationEditorConfigWidget(relation, parent)
