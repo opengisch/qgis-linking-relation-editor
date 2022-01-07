@@ -14,11 +14,13 @@ from qgis.PyQt.QtCore import QTimer
 from qgis.PyQt.QtWidgets import QButtonGroup
 from qgis.PyQt.uic import loadUiType
 from qgis.core import (
+    Qgis,
     QgsApplication,
     QgsFeatureRequest,
     QgsLogger,
     QgsMessageLog,
     QgsProject,
+    QgsRelation,
     QgsVectorLayer,
     QgsVectorLayerUtils
 )
@@ -39,6 +41,12 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         super().__init__(config, parent)
 
         self.mViewMode = QgsDualView.AttributeEditor
+        self.mFeatureSelectionMgr = None # TODO
+
+        self.mButtonsVisibility = QgsRelationEditorWidget.Button(QgsRelationEditorWidget.Button.AllButtons)
+
+        self._nmRelation = QgsRelation()
+        self._layerInSameTransactionGroup = False
 
         self._updateUiTimer = QTimer()
         self._updateUiTimer.setSingleShot(True)
@@ -173,7 +181,7 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         if self.mFeatureSelectionMgr:
             selectionNotEmpty = self.mFeatureSelectionMgr.selectedFeatureCount() > 0
 
-        if self.multiEditModeActive():
+        if self._multiEditModeActive():
             multieditLinkedChildSelected = not self.selectedChildFeatureIds().isEmpty()
 
             canAddGeometry = False
@@ -198,11 +206,11 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         self.mToggleEditingButton.setChecked(canEdit)
         self.mSaveEditsButton.setEnabled(canEdit or canLink or canUnlink)
     
-        self.mToggleEditingButton.setVisible(not self.mLayerInSameTransactionGroup)
+        self.mToggleEditingButton.setVisible(not self._layerInSameTransactionGroup)
     
         self.mLinkFeatureButton.setVisible(self.mButtonsVisibility.testFlag(QgsRelationEditorWidget.Button.Link))
         self.mUnlinkFeatureButton.setVisible(self.mButtonsVisibility.testFlag(QgsRelationEditorWidget.Button.Unlink))
-        self.mSaveEditsButton.setVisible(self.mButtonsVisibility.testFlag(QgsRelationEditorWidget.Button.SaveChildEdits) and not self.mLayerInSameTransactionGroup)
+        self.mSaveEditsButton.setVisible(self.mButtonsVisibility.testFlag(QgsRelationEditorWidget.Button.SaveChildEdits) and not self._layerInSameTransactionGroup)
         self.mAddFeatureButton.setVisible(self.mButtonsVisibility.testFlag(QgsRelationEditorWidget.Button.AddChildFeature))
         self.mAddFeatureGeometryButton.setVisible(self.mButtonsVisibility.testFlag(QgsRelationEditorWidget.Button.AddChildFeature) and self.mEditorContext.mapCanvas() and self.mEditorContext.cadDockWidget() and spatial)
         self.mDuplicateFeatureButton.setVisible(self.mButtonsVisibility.testFlag(QgsRelationEditorWidget.Button.DuplicateChildFeature))
@@ -225,7 +233,7 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
             self.attribute_form.parentFormValueChanged(attribute, newValue)
 
     def addFeatureGeometry(self):
-        if self.multiEditModeActive():
+        if self._multiEditModeActive():
             QgsLogger.warning(self.tr("Adding a geometry feature is not supported in multiple edit mode"))
             return
 
@@ -300,7 +308,7 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         self.updateButtons()
 
     def selectedChildFeatureIds(self):
-        if self.multiEditModeActive():
+        if self._multiEditModeActive():
             featureIds = set()
             for treeWidgetItem in self.mMultiEditTreeWidget.selectedItems():
                 if treeWidgetItem.data(0, self.MultiEditTreeWidgetRole.FeatureType).toInt() != self.MultiEditFeatureType.Child:
@@ -335,3 +343,45 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
                 layer = self.nmRelation().referencedLayer()
 
             self.mEditorContext.mapCanvas().zoomToFeatureIds(layer, self.mFeatureSelectionMgr.selectedFeatureIds())
+
+    def afterSetRelations(self):
+        self._nmRelation = QgsProject.instance().relationManager().relation(str(self.nmRelationId()))
+
+        self._checkTransactionGroup()
+
+        if self.relation().isValid():
+            self.relation().referencingLayer().editingStopped.connect(self.updateButtons)
+            self.relation().referencingLayer().editingStarted.connect(self.updateButtons)
+
+        if self.nmRelation().isValid():
+            self.nmRelation().referencedLayer().editingStarted.connect(self.updateButtons)
+            self.nmRelation().referencedLayer().editingStopped.connect(self.updateButtons)
+
+        self.updateButtons()
+
+    def _checkTransactionGroup(self):
+
+        self._layerInSameTransactionGroup = False
+        connectionString = PluginHelper.connectionString(self.relation().referencedLayer().source())
+        transactionGroup = QgsProject.instance().transactionGroup(self.relation().referencedLayer().providerType(),
+                                                                  connectionString)
+
+        if transactionGroup is None:
+            return
+
+        if self.nmRelation().isValid():
+            if (self.relation().referencedLayer() in transactionGroup.layers() and
+               self.relation().referencingLayer() in transactionGroup.layers() and
+               self.nmRelation().referencedLayer() in transactionGroup.layers()):
+                self._layerInSameTransactionGroup = True
+        else:
+            if (self.relation().referencedLayer() in transactionGroup.layers() and
+               self.relation().referencingLayer() in transactionGroup.layers()):
+                self._layerInSameTransactionGroup = True
+
+    def _multiEditModeActive(self):
+        # multiEditModeActive available since QGIS 3.24
+        if Qgis.QGIS_VERSION_INT < 32400:
+            return False
+        else:
+            return self.multiEditModeActive()
