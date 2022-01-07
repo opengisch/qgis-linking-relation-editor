@@ -22,7 +22,8 @@ from qgis.core import (
     QgsProject,
     QgsRelation,
     QgsVectorLayer,
-    QgsVectorLayerUtils
+    QgsVectorLayerUtils,
+    metaEnumFromValue
 )
 from qgis.gui import (
     QgsAbstractRelationEditorWidget,
@@ -30,6 +31,7 @@ from qgis.gui import (
     QgsMessageBar,
     QgsRelationEditorWidget
 )
+from enhanced_relation_editor_widget.core.plugin_helper import PluginHelper
 
 WidgetUi, _ = loadUiType(os.path.join(os.path.dirname(__file__), '../ui/enhanced_relation_editor_widget.ui'))
 
@@ -142,12 +144,15 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         self.updateButtons()
 
     def config(self):
-        return {}
+        return {"buttons": metaEnumFromValue(QgsRelationEditorWidget.Button.AllButtons).valueToKeys(self.visibleButtons()),
+                "show_first_feature": self.mShowFirstFeature}
 
     def setConfig(self, config):
-        self.ordering_field = config['ordering_field']
-        self.image_path = config['image_path']
-        self.description = config['description']
+        metaEnumButtons = metaEnumFromValue(QgsRelationEditorWidget.Button.AllButtons)
+        (self.mButtonsVisibility, ok) = metaEnumButtons.keysToValue(config.get("buttons",
+                                                                               metaEnumButtons.valueToKeys(QgsRelationEditorWidget.Button.AllButtons)))
+        self.mShowFirstFeature = config.get("show_first_feature", True)
+        self.updateButtons()
 
     def updateButtons(self):
         toggleEditingButtonEnabled = False
@@ -208,14 +213,14 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
     
         self.mToggleEditingButton.setVisible(not self._layerInSameTransactionGroup)
     
-        self.mLinkFeatureButton.setVisible(self.mButtonsVisibility.testFlag(QgsRelationEditorWidget.Button.Link))
-        self.mUnlinkFeatureButton.setVisible(self.mButtonsVisibility.testFlag(QgsRelationEditorWidget.Button.Unlink))
-        self.mSaveEditsButton.setVisible(self.mButtonsVisibility.testFlag(QgsRelationEditorWidget.Button.SaveChildEdits) and not self._layerInSameTransactionGroup)
-        self.mAddFeatureButton.setVisible(self.mButtonsVisibility.testFlag(QgsRelationEditorWidget.Button.AddChildFeature))
-        self.mAddFeatureGeometryButton.setVisible(self.mButtonsVisibility.testFlag(QgsRelationEditorWidget.Button.AddChildFeature) and self.mEditorContext.mapCanvas() and self.mEditorContext.cadDockWidget() and spatial)
-        self.mDuplicateFeatureButton.setVisible(self.mButtonsVisibility.testFlag(QgsRelationEditorWidget.Button.DuplicateChildFeature))
-        self.mDeleteFeatureButton.setVisible(self.mButtonsVisibility.testFlag(QgsRelationEditorWidget.Button.DeleteChildFeature))
-        self.mZoomToFeatureButton.setVisible(self.mButtonsVisibility.testFlag(QgsRelationEditorWidget.Button.ZoomToChildFeature ) and self.mEditorContext.mapCanvas() and spatial)
+        self.mLinkFeatureButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.Link))
+        self.mUnlinkFeatureButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.Unlink))
+        self.mSaveEditsButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.SaveChildEdits) and not self._layerInSameTransactionGroup)
+        self.mAddFeatureButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.AddChildFeature))
+        self.mAddFeatureGeometryButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.AddChildFeature) and bool(self.editorContext().mapCanvas()) and bool(self.editorContext().cadDockWidget()) and spatial)
+        self.mDuplicateFeatureButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.DuplicateChildFeature))
+        self.mDeleteFeatureButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.DeleteChildFeature))
+        self.mZoomToFeatureButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.ZoomToChildFeature) and bool(self.editorContext().mapCanvas()) and spatial)
 
     def updateUi(self):
         self._updateUiTimer.start(200)
@@ -225,12 +230,15 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
             QgsMessageLog.logMessage("updateUiTimeout()")
 
         # we defer attribute form creation on the first valid feature passed on
-        if self.attribute_form:
-            self.attribute_form.deleteLater()
+        #if self.attribute_form:
+        #    self.attribute_form.deleteLater()
 
     def parentFormValueChanged(self, attribute, newValue):
-        if self.attribute_form:
-            self.attribute_form.parentFormValueChanged(attribute, newValue)
+        if Debug:
+            QgsMessageLog.logMessage("parentFormValueChanged()")
+        pass
+        #if self.attribute_form:
+        #    self.attribute_form.parentFormValueChanged(attribute, newValue)
 
     def addFeatureGeometry(self):
         if self._multiEditModeActive():
@@ -250,14 +258,14 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         self.setMapTool(self.mMapToolDigitize)
 
         self.mMapToolDigitize.digitizingCompleted.connect(self.onDigitizingCompleted)
-        self.mEditorContext.mapCanvas().keyPressed.connect(self.onKeyPressed)
+        self.editorContext().mapCanvas().keyPressed.connect(self.onKeyPressed)
 
-        if self.mEditorContext.mainMessageBar():
+        if self.editorContext().mainMessageBar():
             displayString = QgsVectorLayerUtils.getFeatureDisplayString(layer, self.mFeatureList.first())
             title = self.tr("Create child feature for parent %1 \"%2\"").arg(self.relation().referencedLayer().name(), displayString)
             msg = self.tr("Digitize the geometry for the new feature on layer %1. Press &ltESC&gt to cancel.").arg(layer.name() )
             self.mMessageBarItem = QgsMessageBar.createMessage(title, msg, self)
-            self.mEditorContext.mainMessageBar().pushItem(self.mMessageBarItem)
+            self.editorContext().mainMessageBar().pushItem(self.mMessageBarItem)
 
     def deleteSelectedFeatures(self):
         self.deleteFeatures(self.selectedChildFeatureIds())
@@ -337,12 +345,12 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         self.unlinkFeatures(self.selectedChildFeatureIds())
 
     def zoomToSelectedFeatures(self):
-        if self.mEditorContext.mapCanvas():
+        if self.editorContext().mapCanvas():
             layer = self.relation().referencingLayer()
             if self.nmRelation().isValid():
                 layer = self.nmRelation().referencedLayer()
 
-            self.mEditorContext.mapCanvas().zoomToFeatureIds(layer, self.mFeatureSelectionMgr.selectedFeatureIds())
+            self.editorContext().mapCanvas().zoomToFeatureIds(layer, self.mFeatureSelectionMgr.selectedFeatureIds())
 
     def afterSetRelations(self):
         self._nmRelation = QgsProject.instance().relationManager().relation(str(self.nmRelationId()))
