@@ -9,8 +9,11 @@
 # -----------------------------------------------------------
 
 import os
-from enum import Enum
-from qgis.PyQt.QtCore import QTimer
+from enum import IntEnum
+from qgis.PyQt.QtCore import (
+    Qt,
+    QTimer
+)
 from qgis.PyQt.QtWidgets import QButtonGroup
 from qgis.PyQt.uic import loadUiType
 from qgis.core import (
@@ -38,6 +41,14 @@ WidgetUi, _ = loadUiType(os.path.join(os.path.dirname(__file__), '../ui/enhanced
 Debug = True
 
 class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
+
+    class MultiEditFeatureType(IntEnum):
+        Parent = 1,
+        Child = 2
+
+    class MultiEditTreeWidgetRole(IntEnum):
+        FeatureType = Qt.UserRole + 1,
+        FeatureId = Qt.UserRole + 2
 
     def __init__(self, config, parent):
         super().__init__(config, parent)
@@ -233,12 +244,128 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         #if self.attribute_form:
         #    self.attribute_form.deleteLater()
 
+        if not self.relation().isValid() or not self.feature().isValid():
+            return
+
+        if not self.isVisible():
+            return
+
+        if self._multiEditModeActive():
+            self.updateUiMultiEdit()
+        else:
+            self.updateUiSingleEdit()
+
     def parentFormValueChanged(self, attribute, newValue):
         if Debug:
             QgsMessageLog.logMessage("parentFormValueChanged()")
         pass
         #if self.attribute_form:
         #    self.attribute_form.parentFormValueChanged(attribute, newValue)
+
+    def updateUiSingleEdit(self):
+
+        self.mFormViewButton.setVisible(True)
+        self.mTableViewButton.setVisible(True)
+        self.mMultiEditInfoLabel.setVisible(True)
+
+        self.mStackedWidget.setCurrentWidget(self.mDualView)
+
+        request = self.mRelation.getRelatedFeaturesRequest(self.mFeatureList.first())
+
+        if self.nmRelation().isValid():
+            filters = []
+            for feature in self.mRelation.referencingLayer().getFeatures(request):
+                filter = self.nmRelation().getReferencedFeatureRequest(feature).filterExpression().expression()
+                filters.append(filter.prepend('(').append(')'))
+
+            nmRequest = QgsFeatureRequest()
+            nmRequest.setFilterExpression(" OR ".join(filters))
+
+            self.initDualView(self.nmRelation().referencedLayer(), nmRequest)
+
+        elif self.relation().referencingLayer():
+            self.initDualView(self.relation().referencingLayer(), request)
+
+    def updateUiMultiEdit(self):
+        self.mFormViewButton.setVisible(True)
+        self.mTableViewButton.setVisible(True)
+        self.mMultiEditInfoLabel.setVisible(True)
+        self.mStackedWidget.setCurrentWidget(self.mMultiEditStackedWidgetPage)
+        parentTreeWidgetItems = []
+        featureIdsMixedValues = []
+        QMultiMap<QTreeWidgetItem *, QgsFeatureId> multimapChildFeatures
+        self.mMultiEditTreeWidget.clear()
+        for featureParent in self.mFeatureList:
+            treeWidgetItem = self.createMultiEditTreeWidgetItem(featureParent, self.mRelation.referencedLayer(), self.MultiEditFeatureType.Parent)
+            # Parent feature items are not selectable
+            treeWidgetItem.setFlags(Qt.ItemIsEnabled)
+            parentTreeWidgetItems.append(treeWidgetItem)
+            # Get child features
+            request = self.relation().getRelatedFeaturesRequest(featureParent)
+            for featureChild in self.relation().referencingLayer().getFeatures(request):
+                if self.nmRelation().isValid():
+                    requestFinalChild = self.nmRelation().getReferencedFeatureRequest(featureChild)
+                    for featureChildChild in self.nmRelation().referencedLayer().getFeatures(requestFinalChild):
+                        treeWidgetItemChild = self.createMultiEditTreeWidgetItem(featureChildChild, self.nmRelation().referencedLayer(), self.MultiEditFeatureType.Child)
+                        treeWidgetItem.addChild(treeWidgetItemChild)
+                        featureIdsMixedValues.insert(featureChildChild.id())
+                        multimapChildFeatures.insert(treeWidgetItem, featureChildChild.id())
+
+                else:
+                    treeWidgetItemChild = self.createMultiEditTreeWidgetItem(featureChild, self.relation().referencingLayer(), MultiEditFeatureType.Child)
+                    treeWidgetItem.addChild(treeWidgetItemChild)
+                    featureIdsMixedValues.insert(featureChild.id())
+
+            self.mMultiEditTreeWidget.addTopLevelItem(treeWidgetItem)
+            treeWidgetItem.setExpanded(True)
+
+        # Set mixed values indicator (Green or Orange)
+        #
+        # Green:
+        #     n:m and 1:n: 0 child features available
+        #     n:m with no mixed values
+        # Orange:
+        #     n:m with mixed values
+        #     1:n always, including when we pseudo know that feature are related (just added feature)
+        #
+        # See https://github.com/qgis/QGIS/pull/45703
+        #
+        if self.nmRelation().isValid():
+            QgsFeatureIds.iterator iterator = featureIdsMixedValues.begin()
+            while (iterator != featureIdsMixedValues.end()):
+                mixedValues = True
+                for (QTreeWidgetItem *parentTreeWidgetItem : parentTreeWidgetItems):
+                    if (! multimapChildFeatures.values(parentTreeWidgetItem).contains(*iterator))
+                      mixedValues = True
+                      break
+
+                if not mixedValues:
+                    iterator = featureIdsMixedValues.erase(iterator)
+                    continue
+
+                ++iterator
+
+        # Set multiedit info label
+        if featureIdsMixedValues.isEmpty():
+            icon = QgsApplication.getThemeIcon("/multieditSameValues.svg")
+            self.mMultiEditInfoLabel.setPixmap(icon.pixmap(self.mMultiEditInfoLabel.height(),
+                                               self.mMultiEditInfoLabel.height()))
+            self.mMultiEditInfoLabel.setToolTip(tr("All features in selection have equal relations"))
+
+        else:
+            icon = QgsApplication.getThemeIcon("/multieditMixedValues.svg")
+            self.mMultiEditInfoLabel.setPixmap(icon.pixmap(self.mMultiEditInfoLabel.height(),
+                                               self.mMultiEditInfoLabel.height()))
+            self.mMultiEditInfoLabel.setToolTip(tr("Some features in selection have different relations"))
+            # Set italic font for mixed values
+            fontItalic = self.mMultiEditTreeWidget.font()
+            fontItalic.setItalic(True)
+            for parentTreeWidgetItem in parentTreeWidgetItems:
+                for childIndex in range(parentTreeWidgetItem.childCount()):
+                    childItem = parentTreeWidgetItem.child(childIndex)
+                    featureIdCurrentItem = childItem.data(0, self.MultiEditTreeWidgetRole.FeatureId)
+                    if featureIdCurrentItem in featureIdsMixedValues:
+                        childItem.setFont(0, fontItalic)
 
     def addFeatureGeometry(self):
         if self._multiEditModeActive():
@@ -263,7 +390,7 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         if self.editorContext().mainMessageBar():
             displayString = QgsVectorLayerUtils.getFeatureDisplayString(layer, self.mFeatureList.first())
             title = self.tr("Create child feature for parent %1 \"%2\"").arg(self.relation().referencedLayer().name(), displayString)
-            msg = self.tr("Digitize the geometry for the new feature on layer %1. Press &ltESC&gt to cancel.").arg(layer.name() )
+            msg = self.tr("Digitize the geometry for the new feature on layer %1. Press &ltESC&gt to cancel.").arg(layer.name())
             self.mMessageBarItem = QgsMessageBar.createMessage(title, msg, self)
             self.editorContext().mainMessageBar().pushItem(self.mMessageBarItem)
 
@@ -296,7 +423,7 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
                 for i in range(self.mMultiEditTreeWidget.childCount()):
                     treeWidgetItem = self.mMultiEditTreeWidget.child(i)
 
-                    if treeWidgetItem.data( 0, self.MultiEditTreeWidgetRole.FeatureType).toInt() != self.MultiEditFeatureType.Child:
+                    if treeWidgetItem.data(0, self.MultiEditTreeWidgetRole.FeatureType).toInt() != self.MultiEditFeatureType.Child:
                         continue
 
                     featureIdCurrentItem = treeWidgetItem.data(0, self.MultiEditTreeWidgetRole.FeatureId).toInt()
