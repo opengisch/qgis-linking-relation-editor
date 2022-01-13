@@ -12,8 +12,9 @@ import os
 from enum import IntEnum
 from qgis.PyQt.QtCore import (
     Qt,
-    QTimer
+    QTimer,
 )
+from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QButtonGroup
 from qgis.PyQt.uic import loadUiType
 from qgis.core import (
@@ -26,11 +27,13 @@ from qgis.core import (
     QgsRelation,
     QgsVectorLayer,
     QgsVectorLayerUtils,
+    QgsWkbTypes,
     metaEnumFromValue
 )
 from qgis.gui import (
     QgsAbstractRelationEditorWidget,
     QgsDualView,
+    QgsIFeatureSelectionManager,
     QgsMessageBar,
     QgsRelationEditorWidget
 )
@@ -165,6 +168,44 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         self.mShowFirstFeature = config.get("show_first_feature", True)
         self.updateButtons()
 
+    def initDualView(self, layer, request ):
+        if self._multiEditModeActive():
+            QgsLogger.warning(self.tr("Dual view should not be used in multiple edit mode"))
+            return
+
+        ctx = self.editorContext()
+        ctx.setParentFormFeature(self.feature())
+
+        # showFirstFeature available since QGIS 3.24
+        if Qgis.QGIS_VERSION_INT < 32400:
+            self.mDualView.init(layer, self.editorContext().mapCanvas(), request, ctx, True)
+        else:
+            self.mDualView.init(layer, self.editorContext().mapCanvas(), request, ctx, True, self.mShowFirstFeature)
+
+        # self.mFeatureSelectionMgr = QgsFilteredSelectionManager(layer, request, self.mDualView)
+        self.mFeatureSelectionMgr = QgsIFeatureSelectionManager(self.mDualView)
+        self.mDualView.setFeatureSelectionManager(self.mFeatureSelectionMgr)
+
+        self.mFeatureSelectionMgr.selectionChanged.connect(self.updateButtons)
+
+        icon = QIcon()
+        text = str()
+        if layer.geometryType() == QgsWkbTypes.PointGeometry:
+            icon = QgsApplication.getThemeIcon("/mActionCapturePoint.svg")
+            text = self.tr("Add Point Child Feature")
+        elif layer.geometryType() == QgsWkbTypes.LineGeometry:
+            icon = QgsApplication.getThemeIcon("/mActionCaptureLine.svg")
+            text = self.tr("Add Line Child Feature")
+        elif layer.geometryType() == QgsWkbTypes.PolygonGeometry:
+            icon = QgsApplication.getThemeIcon("/mActionCapturePolygon.svg")
+            text = self.tr("Add Polygon Child Feature")
+
+        self.mAddFeatureGeometryButton.setIcon(icon)
+        self.mAddFeatureGeometryButton.setText(text)
+        self.mAddFeatureGeometryButton.setToolTip(text)
+
+        self.updateButtons()
+
     def updateButtons(self):
         toggleEditingButtonEnabled = False
         canAdd = False
@@ -270,11 +311,11 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
         self.mStackedWidget.setCurrentWidget(self.mDualView)
 
-        request = self.mRelation.getRelatedFeaturesRequest(self.mFeatureList.first())
+        request = self.relation().getRelatedFeaturesRequest(self.feature())
 
         if self.nmRelation().isValid():
             filters = []
-            for feature in self.mRelation.referencingLayer().getFeatures(request):
+            for feature in self.relation().referencingLayer().getFeatures(request):
                 filter = self.nmRelation().getReferencedFeatureRequest(feature).filterExpression().expression()
                 filters.append(filter.prepend('(').append(')'))
 
@@ -293,10 +334,10 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         self.mStackedWidget.setCurrentWidget(self.mMultiEditStackedWidgetPage)
         parentTreeWidgetItems = []
         featureIdsMixedValues = []
-        QMultiMap<QTreeWidgetItem *, QgsFeatureId> multimapChildFeatures
+        multimapChildFeatures = dict()
         self.mMultiEditTreeWidget.clear()
         for featureParent in self.mFeatureList:
-            treeWidgetItem = self.createMultiEditTreeWidgetItem(featureParent, self.mRelation.referencedLayer(), self.MultiEditFeatureType.Parent)
+            treeWidgetItem = self.createMultiEditTreeWidgetItem(featureParent, self.relation().referencedLayer(), self.MultiEditFeatureType.Parent)
             # Parent feature items are not selectable
             treeWidgetItem.setFlags(Qt.ItemIsEnabled)
             parentTreeWidgetItems.append(treeWidgetItem)
@@ -309,7 +350,11 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
                         treeWidgetItemChild = self.createMultiEditTreeWidgetItem(featureChildChild, self.nmRelation().referencedLayer(), self.MultiEditFeatureType.Child)
                         treeWidgetItem.addChild(treeWidgetItemChild)
                         featureIdsMixedValues.insert(featureChildChild.id())
-                        multimapChildFeatures.insert(treeWidgetItem, featureChildChild.id())
+
+                        if treeWidgetItem in multimapChildFeatures:
+                            multimapChildFeatures[treeWidgetItem].append(featureChildChild.id())
+                        else:
+                            multimapChildFeatures[treeWidgetItem] = [featureChildChild.id()]
 
                 else:
                     treeWidgetItemChild = self.createMultiEditTreeWidgetItem(featureChild, self.relation().referencingLayer(), MultiEditFeatureType.Child)
@@ -331,32 +376,29 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         # See https://github.com/qgis/QGIS/pull/45703
         #
         if self.nmRelation().isValid():
-            QgsFeatureIds.iterator iterator = featureIdsMixedValues.begin()
-            while (iterator != featureIdsMixedValues.end()):
+            for featureIdMixedValue in featureIdsMixedValues[:]:
                 mixedValues = True
-                for (QTreeWidgetItem *parentTreeWidgetItem : parentTreeWidgetItems):
-                    if (! multimapChildFeatures.values(parentTreeWidgetItem).contains(*iterator))
-                      mixedValues = True
-                      break
+                for parentTreeWidgetItem in parentTreeWidgetItems:
+                    if featureIdMixedValue in multimapChildFeatures[parentTreeWidgetItem]:
+                        mixedValues = True
+                        break
 
                 if not mixedValues:
-                    iterator = featureIdsMixedValues.erase(iterator)
+                    iterator = featureIdsMixedValues.remove(featureIdMixedValue)
                     continue
-
-                ++iterator
 
         # Set multiedit info label
         if featureIdsMixedValues.isEmpty():
             icon = QgsApplication.getThemeIcon("/multieditSameValues.svg")
             self.mMultiEditInfoLabel.setPixmap(icon.pixmap(self.mMultiEditInfoLabel.height(),
                                                self.mMultiEditInfoLabel.height()))
-            self.mMultiEditInfoLabel.setToolTip(tr("All features in selection have equal relations"))
+            self.mMultiEditInfoLabel.setToolTip(self.tr("All features in selection have equal relations"))
 
         else:
             icon = QgsApplication.getThemeIcon("/multieditMixedValues.svg")
             self.mMultiEditInfoLabel.setPixmap(icon.pixmap(self.mMultiEditInfoLabel.height(),
                                                self.mMultiEditInfoLabel.height()))
-            self.mMultiEditInfoLabel.setToolTip(tr("Some features in selection have different relations"))
+            self.mMultiEditInfoLabel.setToolTip(self.tr("Some features in selection have different relations"))
             # Set italic font for mixed values
             fontItalic = self.mMultiEditTreeWidget.font()
             fontItalic.setItalic(True)
