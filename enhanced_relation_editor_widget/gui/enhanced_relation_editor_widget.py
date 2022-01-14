@@ -33,15 +33,16 @@ from qgis.core import (
 from qgis.gui import (
     QgsAbstractRelationEditorWidget,
     QgsDualView,
-    QgsIFeatureSelectionManager,
     QgsMessageBar,
     QgsRelationEditorWidget
 )
 from enhanced_relation_editor_widget.core.plugin_helper import PluginHelper
+from enhanced_relation_editor_widget.gui.filtered_selection_manager import FilteredSelectionManager
 
 WidgetUi, _ = loadUiType(os.path.join(os.path.dirname(__file__), '../ui/enhanced_relation_editor_widget.ui'))
 
 Debug = True
+
 
 class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
@@ -57,7 +58,7 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         super().__init__(config, parent)
 
         self.mViewMode = QgsDualView.AttributeEditor
-        self.mFeatureSelectionMgr = None # TODO
+        self.mFeatureSelectionMgr = None
 
         self.mButtonsVisibility = QgsRelationEditorWidget.Button(QgsRelationEditorWidget.Button.AllButtons)
 
@@ -168,7 +169,7 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         self.mShowFirstFeature = config.get("show_first_feature", True)
         self.updateButtons()
 
-    def initDualView(self, layer, request ):
+    def initDualView(self, layer, request):
         if self._multiEditModeActive():
             QgsLogger.warning(self.tr("Dual view should not be used in multiple edit mode"))
             return
@@ -182,8 +183,7 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         else:
             self.mDualView.init(layer, self.editorContext().mapCanvas(), request, ctx, True, self.mShowFirstFeature)
 
-        # self.mFeatureSelectionMgr = QgsFilteredSelectionManager(layer, request, self.mDualView)
-        self.mFeatureSelectionMgr = QgsIFeatureSelectionManager(self.mDualView)
+        self.mFeatureSelectionMgr = FilteredSelectionManager(layer, request, self.mDualView)
         self.mDualView.setFeatureSelectionManager(self.mFeatureSelectionMgr)
 
         self.mFeatureSelectionMgr.selectionChanged.connect(self.updateButtons)
