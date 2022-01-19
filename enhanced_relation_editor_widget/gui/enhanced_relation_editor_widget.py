@@ -38,6 +38,7 @@ from qgis.gui import (
 )
 from enhanced_relation_editor_widget.core.plugin_helper import PluginHelper
 from enhanced_relation_editor_widget.gui.filtered_selection_manager import FilteredSelectionManager
+from enhanced_relation_editor_widget.gui.relation_editor_link_child_manager_dialog import RelationEditorLinkChildManagerDialog
 
 WidgetUi, _ = loadUiType(os.path.join(os.path.dirname(__file__), '../ui/enhanced_relation_editor_widget.ui'))
 
@@ -150,7 +151,7 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         self.mAddFeatureGeometryButton.clicked.connect(self.addFeatureGeometry)
         self.mDuplicateFeatureButton.clicked.connect(self.duplicateSelectedFeatures)
         self.mDeleteFeatureButton.clicked.connect(self.deleteSelectedFeatures)
-        self.mLinkFeatureButton.clicked.connect(self.linkFeature)
+        self.mLinkFeatureButton.clicked.connect(self._linkFeature)
         self.mUnlinkFeatureButton.clicked.connect(self.unlinkSelectedFeatures)
         self.mZoomToFeatureButton.clicked.connect(self.zoomToSelectedFeatures)
         self.mMultiEditTreeWidget.itemSelectionChanged.connect(self.multiEditItemSelectionChanged)
@@ -431,8 +432,8 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
         if self.editorContext().mainMessageBar():
             displayString = QgsVectorLayerUtils.getFeatureDisplayString(layer, self.mFeatureList.first())
-            title = self.tr("Create child feature for parent %1 \"%2\"").arg(self.relation().referencedLayer().name(), displayString)
-            msg = self.tr("Digitize the geometry for the new feature on layer %1. Press &ltESC&gt to cancel.").arg(layer.name())
+            title = self.tr("Create child feature for parent {0} \"{1}\"").format(self.relation().referencedLayer().name(), displayString)
+            msg = self.tr("Digitize the geometry for the new feature on layer {0}. Press &ltESC&gt to cancel.").format(layer.name())
             self.mMessageBarItem = QgsMessageBar.createMessage(title, msg, self)
             self.editorContext().mainMessageBar().pushItem(self.mMessageBarItem)
 
@@ -449,6 +450,25 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
     def duplicateSelectedFeatures(self):
         self.duplicateFeatures(self.mFeatureSelectionMgr.selectedFeatureIds())
+
+    def _linkFeature(self):
+
+        layer = None
+
+        if self.nmRelation().isValid():
+            layer = self.nmRelation().referencedLayer()
+        else:
+            if self._multiEditModeActive():
+                QgsLogger.warning(self.tr("For 1:n relations is not possible to link to multiple features"))
+                return
+
+            layer = self.relation().referencingLayer()
+
+        selectionDlg = RelationEditorLinkChildManagerDialog(self, layer, self.relation().referencedLayer(), self.feature())
+        selectionDlg.setAttribute(Qt.WA_DeleteOnClose)
+
+        #selectionDlg.accepted.connect(self_onLinkFeatureDlgAccepted)
+        selectionDlg.show()
 
     def multiEditItemSelectionChanged(self):
         selectedItems = self.mMultiEditTreeWidget.selectedItems()

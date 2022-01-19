@@ -49,4 +49,4 @@ class FilteredSelectionManager(VectorLayerSelectionManager):
             else:
                 lselected.remove(fid)
 
-        self.selectionChanged(lselected, deselected, clearAndSelect)
+        self.selectionChanged.emit(lselected, deselected, clearAndSelect)
