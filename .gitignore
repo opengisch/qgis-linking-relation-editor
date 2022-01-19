@@ -7,3 +7,6 @@ i18n
 .DS_Store
 github_deploy_key.out
 *.kdev4*
+*.gpkg-shm
+*.gpkg-wal
+*.qgs~
