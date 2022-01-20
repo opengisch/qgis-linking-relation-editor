@@ -25,21 +25,21 @@
     </widget>
    </item>
    <item row="3" column="1" alignment="Qt::AlignHCenter">
-    <widget class="QToolButton" name="toolButton_3">
+    <widget class="QToolButton" name="mLinkAllButton">
      <property name="text">
       <string>&gt;&gt;</string>
      </property>
     </widget>
    </item>
    <item row="2" column="1" alignment="Qt::AlignHCenter">
-    <widget class="QToolButton" name="toolButton_4">
+    <widget class="QToolButton" name="mUnlinkSelectedButton">
      <property name="text">
       <string>&lt;</string>
      </property>
     </widget>
    </item>
    <item row="1" column="1" alignment="Qt::AlignHCenter">
-    <widget class="QToolButton" name="toolButton">
+    <widget class="QToolButton" name="mLinkSelectedButton">
      <property name="text">
       <string>&gt;</string>
      </property>
@@ -59,7 +59,7 @@
     </spacer>
    </item>
    <item row="4" column="1" alignment="Qt::AlignHCenter">
-    <widget class="QToolButton" name="toolButton_2">
+    <widget class="QToolButton" name="mUnlinkAllButton">
      <property name="text">
       <string>&lt;&lt;</string>
      </property>
@@ -98,7 +98,11 @@
       </widget>
      </item>
      <item row="1" column="0" colspan="2">
-      <widget class="QListView" name="mFeaturesListViewLeft"/>
+      <widget class="QListView" name="mFeaturesListViewLeft">
+       <property name="selectionMode">
+        <enum>QAbstractItemView::ExtendedSelection</enum>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>
@@ -112,7 +116,11 @@
       </widget>
      </item>
      <item row="1" column="0">
-      <widget class="QListView" name="mFeaturesListViewRight"/>
+      <widget class="QListView" name="mFeaturesListViewRight">
+       <property name="selectionMode">
+        <enum>QAbstractItemView::ExtendedSelection</enum>
+       </property>
+      </widget>
      </item>
      <item row="0" column="1">
       <spacer name="verticalSpacer_3">

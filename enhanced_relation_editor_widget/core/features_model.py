@@ -59,6 +59,24 @@ class FeaturesModel(QAbstractListModel):
 
         return None
 
+    def removeRows(self,
+                   row: int = ...,
+                   count: int = ...,
+                   index: QModelIndex = ...):
+
+        if row + count > self.rowCount():
+            return False
+
+        self.beginRemoveRows(QModelIndex(),
+                             row,
+                             row + count - 1);
+        self._modelFeatures[row:(row + count)] = []
+        self.endRemoveRows()
+        return True
+
+    def supportedDropActions(self):
+        return Qt.MoveAction
+
     def setFeatures(self,
                     features):
         self.beginResetModel()

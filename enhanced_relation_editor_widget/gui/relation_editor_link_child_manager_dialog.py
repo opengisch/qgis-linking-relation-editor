@@ -9,9 +9,15 @@
 # -----------------------------------------------------------
 
 import os
-from qgis.PyQt.QtWidgets import QDialog
+from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtWidgets import (
+    QDialog,
+    QAction
+)
 from qgis.PyQt.uic import loadUiType
 from qgis.core import (
+    QgsApplication,
     QgsFeature,
     QgsFeatureRequest,
     QgsRelation,
@@ -44,6 +50,34 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         # Ui setup
         self.setupUi(self)
 
+        # Actions
+        self.actionLinkSelected = QAction(QgsApplication.getThemeIcon("/mActionArrowRight.svg"),
+                                          self.tr("Link selected"))
+        self.actionUnlinkSelected = QAction(QgsApplication.getThemeIcon("/mActionArrowLeft.svg"),
+                                            self.tr("Unlink seleted"))
+        self.actionLinkAll = QAction(QgsApplication.getThemeIcon("/mActionDoubleArrowRight.svg"),
+                                     self.tr("Link all"))
+        self.actionUnlinkAll = QAction(QgsApplication.getThemeIcon("/mActionDoubleArrowLeft.svg"),
+                                       self.tr("Unlink all"))
+
+        # Tool buttons
+        self.mLinkSelectedButton.setDefaultAction(self.actionLinkSelected)
+        self.mLinkSelectedButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        self.mUnlinkSelectedButton.setDefaultAction(self.actionUnlinkSelected)
+        self.mUnlinkSelectedButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        self.mLinkAllButton.setDefaultAction(self.actionLinkAll)
+        self.mLinkAllButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        self.mUnlinkAllButton.setDefaultAction(self.actionUnlinkAll)
+        self.mUnlinkAllButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
+
+        # ListView menu
+        self.mFeaturesListViewLeft.setContextMenuPolicy(Qt.ActionsContextMenu)
+        self.mFeaturesListViewLeft.addAction(self.actionLinkSelected)
+        self.mFeaturesListViewLeft.addAction(self.actionLinkAll)
+        self.mFeaturesListViewRight.setContextMenuPolicy(Qt.ActionsContextMenu)
+        self.mFeaturesListViewRight.addAction(self.actionUnlinkSelected)
+        self.mFeaturesListViewRight.addAction(self.actionUnlinkAll)
+
         displayString = QgsVectorLayerUtils.getFeatureDisplayString(self._parentLayer,
                                                                     self._parentFeature)
         self.setWindowTitle(self.tr("Manage linked features for parent {0} \"{1}\"").format(self._parentLayer.name(),
@@ -62,6 +96,12 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
                                                  self._layer,
                                                  self)
         self.mFeaturesListViewRight.setModel(self._featuresModelRight)
+
+        # Signal slots
+        self.actionLinkSelected.triggered.connect(self._linkSelected)
+        self.actionUnlinkSelected.triggered.connect(self._unlinkSelected)
+        self.actionLinkAll.triggered.connect(self._linkAll)
+        self.actionUnlinkAll.triggered.connect(self._unlinkAll)
 
     def _getAllFeatures(self):
 
@@ -94,5 +134,14 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
 
         return linkedFeatures.values(), unlinkedFeatures
 
+    def _linkSelected(self):
+        pass
 
+    def _unlinkSelected(self):
+        pass
 
+    def _linkAll(self):
+        pass
+
+    def _unlinkAll(self):
+        pass
