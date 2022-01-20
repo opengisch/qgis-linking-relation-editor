@@ -1,0 +1,7 @@
+version: '3'
+services:
+  qgis:
+    image: opengisch/qgis:${QGIS_TEST_VERSION}
+    tty: true
+    volumes:
+      - ${GITHUB_WORKSPACE}:/usr/src
