@@ -464,7 +464,12 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
             layer = self.relation().referencingLayer()
 
-        selectionDlg = RelationEditorLinkChildManagerDialog(self, layer, self.relation().referencedLayer(), self.feature())
+        selectionDlg = RelationEditorLinkChildManagerDialog(layer,
+                                                            self.relation().referencedLayer(),
+                                                            self.feature(),
+                                                            self.relation(),
+                                                            self.nmRelation(),
+                                                            self)
         selectionDlg.setAttribute(Qt.WA_DeleteOnClose)
 
         #selectionDlg.accepted.connect(self_onLinkFeatureDlgAccepted)

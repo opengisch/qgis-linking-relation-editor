@@ -7,6 +7,6 @@ start_app()
 
 class TestEnhancedRelationEditorWidgetFactory(unittest.TestCase):
 
-    def test_instantiate(self):
+    def test_Instantiate(self):
         EnhancedRelationEditorWidgetFactory()
 
