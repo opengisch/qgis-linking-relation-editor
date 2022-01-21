@@ -8,7 +8,11 @@
 #
 # -----------------------------------------------------------
 
-
+import os
+from enum import IntEnum
+from itertools import groupby
+from operator import itemgetter
+from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtCore import (
     Qt,
     QAbstractListModel,
@@ -24,24 +28,53 @@ from qgis.core import (
 
 class FeaturesModel(QAbstractListModel):
 
+    class FeatureState(IntEnum):
+        Linked = 1,
+        Unlinked = 2,
+        ToBeLinked = 3,
+        ToBeUnlinked = 4
+
     class FeaturesModelElement(object):
         def __init__(self,
                      feature: QgsFeature,
+                     featureState,
                      layer: QgsVectorLayer):
             self._displayString = QgsVectorLayerUtils.getFeatureDisplayString(layer, feature)
+            self._featureState = featureState
+
+        def featureState(self):
+            return self._featureState
+
+        def setFeatureState(self,
+                            featureState):
+            self._featureState = featureState
 
         def displayString(self):
             return self._displayString
 
+        def displayIcon(self):
+            if self._featureState == FeaturesModel.FeatureState.Unlinked or self._featureState == FeaturesModel.FeatureState.Linked:
+                return QIcon()
+            elif self._featureState == FeaturesModel.FeatureState.ToBeLinked:
+                return QIcon(os.path.join(os.path.dirname(__file__), '../images/mActionToBeLinked.svg'))
+            elif self._featureState == FeaturesModel.FeatureState.ToBeUnlinked:
+                return QIcon(os.path.join(os.path.dirname(__file__), '../images/mActionToBeUnlinked.svg'))
+
+            return QIcon()
+
     def __init__(self,
                  features,
+                 featureState,
                  layer: QgsVectorLayer,
+                 parentView,
                  parent: QObject = None):
         super().__init__(parent)
 
         self._layer = layer
         self._modelFeatures = []
-        self.setFeatures(features)
+        self._parentView = parentView
+        self.setFeatures(features,
+                         featureState)
 
     def rowCount(self,
                  index: QModelIndex = ...) -> int:
@@ -57,6 +90,9 @@ class FeaturesModel(QAbstractListModel):
         if role == Qt.DisplayRole:
             return self._modelFeatures[index.row()].displayString()
 
+        if role == Qt.DecorationRole:
+            return self._modelFeatures[index.row()].displayIcon()
+
         return None
 
     def removeRows(self,
@@ -69,7 +105,7 @@ class FeaturesModel(QAbstractListModel):
 
         self.beginRemoveRows(QModelIndex(),
                              row,
-                             row + count - 1);
+                             row + count - 1)
         self._modelFeatures[row:(row + count)] = []
         self.endRemoveRows()
         return True
@@ -78,12 +114,47 @@ class FeaturesModel(QAbstractListModel):
         return Qt.MoveAction
 
     def setFeatures(self,
-                    features):
+                    features,
+                    featuresState):
         self.beginResetModel()
 
         self._modelFeatures = []
         for feature in features:
             self._modelFeatures.append(FeaturesModel.FeaturesModelElement(feature,
+                                                                          featuresState,
                                                                           self._layer))
 
         self.endResetModel()
+
+    def addFeaturesModelElements(self,
+                                 featureModelElements):
+        self.beginInsertRows(QModelIndex(),
+                             self.rowCount(),
+                             self.rowCount() + len(featureModelElements))
+        self._modelFeatures.extend(featureModelElements)
+        self.endInsertRows()
+
+    def takeSelected(self):
+        indexes = [modelIndex.row() for modelIndex in self._parentView.selectedIndexes()]
+
+        #ranges =
+        indexes = sorted(indexes)
+        for k, g in groupby(enumerate(indexes), lambda ix: ix[0] - ix[1]):
+            print("List: {}".format(g))
+            #print(list(itemgetter(1), g))
+
+        featureModelElements = []
+        for index in indexes:
+            print(self._modelFeatures[index].displayString())
+
+        #self.beginRemoveRows()
+        #self.endRemoveRows()
+
+        return featureModelElements
+
+    def takeAll(self):
+        self.beginResetModel()
+        featureModelElements = self._modelFeatures
+        self._modelFeatures = []
+        self.endResetModel()
+        return featureModelElements
