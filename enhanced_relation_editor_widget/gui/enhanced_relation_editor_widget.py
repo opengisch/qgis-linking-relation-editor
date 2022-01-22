@@ -13,6 +13,7 @@ from enum import IntEnum
 from qgis.PyQt.QtCore import (
     Qt,
     QTimer,
+    QT_VERSION_STR
 )
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QButtonGroup
@@ -144,7 +145,10 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
         self.mStackedWidget.addWidget(self.mDualView)
 
-        self.mViewModeButtonGroup.idClicked.connect(self.setViewMode)
+        if QT_VERSION_STR < '5.15.0':
+            self.mViewModeButtonGroup.buttonClicked.connect(self.setViewModeButton)
+        else:
+            self.mViewModeButtonGroup.idClicked.connect(self.setViewMode)
         self.mToggleEditingButton.clicked.connect(self.toggleEditing)
         self.mSaveEditsButton.clicked.connect(self.saveEdits)
         self.mAddFeatureButton.clicked.connect(self.addFeature)
@@ -522,6 +526,14 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
             return self.mFeatureSelectionMgr.selectedFeatureIds()
 
     def setViewMode(self, mode: QgsDualView.ViewMode):
+        self.mDualView.setView(mode)
+        self.mViewMode = mode
+
+    def setViewModeButton(self, button):
+        mode = QgsDualView.AttributeEditor
+        if button == self.mTableViewButton:
+            mode = QgsDualView.AttributeTable
+        
         self.mDualView.setView(mode)
         self.mViewMode = mode
 
