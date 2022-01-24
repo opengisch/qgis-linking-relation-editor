@@ -34,13 +34,17 @@ class FeaturesModel(QAbstractListModel):
         ToBeLinked = 3,
         ToBeUnlinked = 4
 
-    class FeaturesModelElement(object):
+    class FeaturesModelItem(object):
         def __init__(self,
                      feature: QgsFeature,
                      featureState,
                      layer: QgsVectorLayer):
-            self._displayString = QgsVectorLayerUtils.getFeatureDisplayString(layer, feature)
+            self._feature = feature
             self._featureState = featureState
+            self._displayString = QgsVectorLayerUtils.getFeatureDisplayString(layer, feature)
+
+        def feature(self):
+            return self._feature
 
         def featureState(self):
             return self._featureState
@@ -120,21 +124,24 @@ class FeaturesModel(QAbstractListModel):
 
         self._modelFeatures = []
         for feature in features:
-            self._modelFeatures.append(FeaturesModel.FeaturesModelElement(feature,
-                                                                          featuresState,
-                                                                          self._layer))
+            self._modelFeatures.append(FeaturesModel.FeaturesModelItem(feature,
+                                                                       featuresState,
+                                                                       self._layer))
 
         self.endResetModel()
 
-    def addFeaturesModelElements(self,
-                                 featureModelElements):
+    def getAllFeatureItems(self):
+        return self._modelFeatures
+
+    def addFeaturesModelItems(self,
+                              featureModelElements):
         self.beginInsertRows(QModelIndex(),
                              self.rowCount(),
                              self.rowCount() + len(featureModelElements))
         self._modelFeatures.extend(featureModelElements)
         self.endInsertRows()
 
-    def takeSelected(self):
+    def takeSelectedItems(self):
         indexes = [modelIndex.row() for modelIndex in self._parentView.selectedIndexes()]
         if not indexes:
             return []
@@ -168,7 +175,7 @@ class FeaturesModel(QAbstractListModel):
 
         return featureModelElements
 
-    def takeAll(self):
+    def takeAllItems(self):
         self.beginResetModel()
         featureModelElements = self._modelFeatures
         self._modelFeatures = []

@@ -107,6 +107,22 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self.actionLinkAll.triggered.connect(self._linkAll)
         self.actionUnlinkAll.triggered.connect(self._unlinkAll)
 
+    def getFeatureIdsToUnlink(self):
+        featureIdsToUnlink = []
+        for featureModelItem in self._featuresModelLeft.getAllFeatureItems():
+            if featureModelItem.featureState() == FeaturesModel.FeatureState.ToBeUnlinked:
+                featureIdsToUnlink.append(featureModelItem.feature().id())
+
+        return featureIdsToUnlink
+
+    def getFeatureIdsToLink(self):
+        featureIdsToLink = []
+        for featureModelItem in self._featuresModelRight.getAllFeatureItems():
+            if featureModelItem.featureState() == FeaturesModel.FeatureState.ToBeLinked:
+                featureIdsToLink.append(featureModelItem.feature().id())
+
+        return featureIdsToLink
+
     def _getAllFeatures(self):
 
         if not self._relation.isValid() or not self._parentFeature.isValid():
@@ -139,41 +155,41 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         return linkedFeatures.values(), unlinkedFeatures
 
     def _linkSelected(self):
-        featuresModelElements = self._featuresModelLeft.takeSelected()
+        featuresModelElements = self._featuresModelLeft.takeSelectedItems()
         for featuresModelElement in featuresModelElements:
             if featuresModelElement.featureState() == FeaturesModel.FeatureState.ToBeUnlinked:
                 featuresModelElement.setFeatureState(FeaturesModel.FeatureState.Linked)
             else:
                 featuresModelElement.setFeatureState(FeaturesModel.FeatureState.ToBeLinked)
 
-        self._featuresModelRight.addFeaturesModelElements(featuresModelElements)
+        self._featuresModelRight.addFeaturesModelItems(featuresModelElements)
 
     def _unlinkSelected(self):
-        featuresModelElements = self._featuresModelRight.takeSelected()
+        featuresModelElements = self._featuresModelRight.takeSelectedItems()
         for featuresModelElement in featuresModelElements:
             if featuresModelElement.featureState() == FeaturesModel.FeatureState.ToBeLinked:
                 featuresModelElement.setFeatureState(FeaturesModel.FeatureState.Unlinked)
             else:
                 featuresModelElement.setFeatureState(FeaturesModel.FeatureState.ToBeUnlinked)
 
-        self._featuresModelLeft.addFeaturesModelElements(featuresModelElements)
+        self._featuresModelLeft.addFeaturesModelItems(featuresModelElements)
 
     def _linkAll(self):
-        featuresModelElements = self._featuresModelLeft.takeAll()
+        featuresModelElements = self._featuresModelLeft.takeAllItems()
         for featuresModelElement in featuresModelElements:
             if featuresModelElement.featureState() == FeaturesModel.FeatureState.ToBeUnlinked:
                 featuresModelElement.setFeatureState(FeaturesModel.FeatureState.Linked)
             else:
                 featuresModelElement.setFeatureState(FeaturesModel.FeatureState.ToBeLinked)
 
-        self._featuresModelRight.addFeaturesModelElements(featuresModelElements)
+        self._featuresModelRight.addFeaturesModelItems(featuresModelElements)
 
     def _unlinkAll(self):
-        featuresModelElements = self._featuresModelRight.takeAll()
+        featuresModelElements = self._featuresModelRight.takeAllItems()
         for featuresModelElement in featuresModelElements:
             if featuresModelElement.featureState() == FeaturesModel.FeatureState.ToBeLinked:
                 featuresModelElement.setFeatureState(FeaturesModel.FeatureState.Unlinked)
             else:
                 featuresModelElement.setFeatureState(FeaturesModel.FeatureState.ToBeUnlinked)
 
-        self._featuresModelLeft.addFeaturesModelElements(featuresModelElements)
+        self._featuresModelLeft.addFeaturesModelItems(featuresModelElements)
