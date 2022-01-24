@@ -136,19 +136,35 @@ class FeaturesModel(QAbstractListModel):
 
     def takeSelected(self):
         indexes = [modelIndex.row() for modelIndex in self._parentView.selectedIndexes()]
+        if not indexes:
+            return []
 
-        #ranges =
-        indexes = sorted(indexes)
-        for k, g in groupby(enumerate(indexes), lambda ix: ix[0] - ix[1]):
-            print("List: {}".format(g))
-            #print(list(itemgetter(1), g))
+        indexes.sort()
+
+        # Clear selection to avoid widget accessing invalid indexes
+        self._parentView.selectionModel().clear()
+
+        self.beginResetModel()
 
         featureModelElements = []
-        for index in indexes:
-            print(self._modelFeatures[index].displayString())
 
-        #self.beginRemoveRows()
-        #self.endRemoveRows()
+        indexesMap = enumerate(indexes)
+        indexesMap = sorted(indexesMap, reverse=True)
+        print("indexesMap: {}".format(indexesMap))
+        for k, g in groupby(indexesMap, lambda x: x[0] - x[1]):
+            group = (map(itemgetter(1), g))
+            group = list(map(int, group))
+
+            # self.beginRemoveRows(QModelIndex(),
+            #                      group[-1],
+            #                      len(group))
+
+            featureModelElements.extend(self._modelFeatures[group[-1]:group[0] + 1])
+            del self._modelFeatures[group[-1]:group[0] + 1]
+
+            # self.endRemoveRows()
+
+        self.endResetModel()
 
         return featureModelElements
 
