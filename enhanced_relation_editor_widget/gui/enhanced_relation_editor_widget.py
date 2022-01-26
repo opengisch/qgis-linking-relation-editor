@@ -476,6 +476,7 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
                                                                                     self.feature(),
                                                                                     self.relation(),
                                                                                     self.nmRelation(),
+                                                                                    self.editorContext(),
                                                                                     self)
 
         if relationEditorLinkChildManagerDialog.exec() == QDialog.Accepted:

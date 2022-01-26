@@ -24,6 +24,7 @@ from qgis.core import (
     QgsVectorLayer,
     QgsVectorLayerUtils
 )
+from qgis.gui import QgsAttributeEditorContext
 from enhanced_relation_editor_widget.core.features_model import FeaturesModel
 
 
@@ -38,6 +39,7 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
                  parentFeature: QgsFeature,
                  relation: QgsRelation,
                  nmRelation: QgsRelation,
+                 editorContext: QgsAttributeEditorContext,
                  parent=None):
         super().__init__(parent)
 
@@ -46,37 +48,53 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self._parentFeature = parentFeature
         self._relation = relation
         self._nmRelation = nmRelation
+        self._editorContext = editorContext
 
         # Ui setup
         self.setupUi(self)
 
         # Actions
-        self.actionLinkSelected = QAction(QgsApplication.getThemeIcon("/mActionArrowRight.svg"),
-                                          self.tr("Link selected"))
-        self.actionUnlinkSelected = QAction(QgsApplication.getThemeIcon("/mActionArrowLeft.svg"),
-                                            self.tr("Unlink seleted"))
-        self.actionLinkAll = QAction(QgsApplication.getThemeIcon("/mActionDoubleArrowRight.svg"),
-                                     self.tr("Link all"))
-        self.actionUnlinkAll = QAction(QgsApplication.getThemeIcon("/mActionDoubleArrowLeft.svg"),
-                                       self.tr("Unlink all"))
+        self._actionLinkSelected = QAction(QgsApplication.getThemeIcon("/mActionArrowRight.svg"),
+                                           self.tr("Link selected"))
+        self._actionUnlinkSelected = QAction(QgsApplication.getThemeIcon("/mActionArrowLeft.svg"),
+                                             self.tr("Unlink seleted"))
+        self._actionLinkAll = QAction(QgsApplication.getThemeIcon("/mActionDoubleArrowRight.svg"),
+                                      self.tr("Link all"))
+        self._actionUnlinkAll = QAction(QgsApplication.getThemeIcon("/mActionDoubleArrowLeft.svg"),
+                                        self.tr("Unlink all"))
+        self._actionZoomToSelectedLeft = QAction(QgsApplication.getThemeIcon("/mActionZoomToSelected.svg"),
+                                                 self.tr("Zoom To Feature(s)"))
+        self._actionZoomToSelectedLeft.setToolTip(self.tr("Zoom to selected child feature(s)"))
+        self._actionZoomToSelectedRight = QAction(QgsApplication.getThemeIcon("/mActionZoomToSelected.svg"),
+                                                  self.tr("Zoom To Feature(s)"))
+        self._actionZoomToSelectedRight.setToolTip(self.tr("Zoom to selected child feature(s)"))
 
         # Tool buttons
-        self.mLinkSelectedButton.setDefaultAction(self.actionLinkSelected)
+        self.mLinkSelectedButton.setDefaultAction(self._actionLinkSelected)
         self.mLinkSelectedButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
-        self.mUnlinkSelectedButton.setDefaultAction(self.actionUnlinkSelected)
+        self.mUnlinkSelectedButton.setDefaultAction(self._actionUnlinkSelected)
         self.mUnlinkSelectedButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
-        self.mLinkAllButton.setDefaultAction(self.actionLinkAll)
+        self.mLinkAllButton.setDefaultAction(self._actionLinkAll)
         self.mLinkAllButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
-        self.mUnlinkAllButton.setDefaultAction(self.actionUnlinkAll)
+        self.mUnlinkAllButton.setDefaultAction(self._actionUnlinkAll)
         self.mUnlinkAllButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        self.mZoomToFeatureLeftButton.setDefaultAction(self._actionZoomToSelectedLeft)
+        self.mZoomToFeatureLeftButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        self.mZoomToFeatureLeftButton.setVisible(self._layer.isSpatial())
+        self.mZoomToFeatureRightButton.setDefaultAction(self._actionZoomToSelectedRight)
+        self.mZoomToFeatureRightButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        self.mZoomToFeatureRightButton.setVisible(self._layer.isSpatial())
 
         # ListView menu
         self.mFeaturesListViewLeft.setContextMenuPolicy(Qt.ActionsContextMenu)
-        self.mFeaturesListViewLeft.addAction(self.actionLinkSelected)
-        self.mFeaturesListViewLeft.addAction(self.actionLinkAll)
+        self.mFeaturesListViewLeft.addAction(self._actionLinkSelected)
+        self.mFeaturesListViewLeft.addAction(self._actionLinkAll)
         self.mFeaturesListViewRight.setContextMenuPolicy(Qt.ActionsContextMenu)
-        self.mFeaturesListViewRight.addAction(self.actionUnlinkSelected)
-        self.mFeaturesListViewRight.addAction(self.actionUnlinkAll)
+        self.mFeaturesListViewRight.addAction(self._actionUnlinkSelected)
+        self.mFeaturesListViewRight.addAction(self._actionUnlinkAll)
+        if self._layer.isSpatial():
+            self.mFeaturesListViewLeft.addAction(self._actionZoomToSelectedLeft)
+            self.mFeaturesListViewRight.addAction(self._actionZoomToSelectedRight)
 
         displayString = QgsVectorLayerUtils.getFeatureDisplayString(self._parentLayer,
                                                                     self._parentFeature)
@@ -102,10 +120,12 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self.mFeaturesListViewRight.setModel(self._featuresModelRight)
 
         # Signal slots
-        self.actionLinkSelected.triggered.connect(self._linkSelected)
-        self.actionUnlinkSelected.triggered.connect(self._unlinkSelected)
-        self.actionLinkAll.triggered.connect(self._linkAll)
-        self.actionUnlinkAll.triggered.connect(self._unlinkAll)
+        self._actionLinkSelected.triggered.connect(self._linkSelected)
+        self._actionUnlinkSelected.triggered.connect(self._unlinkSelected)
+        self._actionLinkAll.triggered.connect(self._linkAll)
+        self._actionUnlinkAll.triggered.connect(self._unlinkAll)
+        self._actionZoomToSelectedLeft.triggered.connect(self._zoomToSelectedLeft)
+        self._actionZoomToSelectedRight.triggered.connect(self._zoomToSelectedRight)
 
     def getFeatureIdsToUnlink(self):
         featureIdsToUnlink = []
@@ -193,3 +213,25 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
                 featuresModelElement.setFeatureState(FeaturesModel.FeatureState.ToBeUnlinked)
 
         self._featuresModelLeft.addFeaturesModelItems(featuresModelElements)
+
+    def _zoomToSelectedLeft(self):
+        if not self._editorContext.mapCanvas():
+            return
+
+        selectedFeatureIds = self._featuresModelLeft.getSelectedFeatures()
+        if len(selectedFeatureIds) == 0:
+            return
+
+        self._editorContext.mapCanvas().zoomToFeatureIds(self._layer,
+                                                         selectedFeatureIds)
+
+    def _zoomToSelectedRight(self):
+        if not self._editorContext.mapCanvas():
+            return
+
+        selectedFeatureIds = self._featuresModelRight.getSelectedFeatures()
+        if len(selectedFeatureIds) == 0:
+            return
+
+        self._editorContext.mapCanvas().zoomToFeatureIds(self._layer,
+                                                         selectedFeatureIds)

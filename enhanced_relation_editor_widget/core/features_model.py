@@ -46,6 +46,9 @@ class FeaturesModel(QAbstractListModel):
         def feature(self):
             return self._feature
 
+        def featureId(self):
+            return self._feature.id()
+
         def featureState(self):
             return self._featureState
 
@@ -132,6 +135,17 @@ class FeaturesModel(QAbstractListModel):
 
     def getAllFeatureItems(self):
         return self._modelFeatures
+
+    def getSelectedFeatures(self):
+        indexes = [modelIndex.row() for modelIndex in self._parentView.selectedIndexes()]
+        if not indexes:
+            return []
+
+        selectedFeatures = []
+        for index in indexes:
+            selectedFeatures.append(self._modelFeatures[index].featureId())
+
+        return selectedFeatures
 
     def addFeaturesModelItems(self,
                               featureModelElements):
