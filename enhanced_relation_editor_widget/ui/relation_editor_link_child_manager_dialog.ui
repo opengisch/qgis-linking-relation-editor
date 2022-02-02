@@ -25,21 +25,21 @@
     </widget>
    </item>
    <item row="3" column="1" alignment="Qt::AlignHCenter">
-    <widget class="QToolButton" name="toolButton_3">
+    <widget class="QToolButton" name="mLinkAllButton">
      <property name="text">
       <string>&gt;&gt;</string>
      </property>
     </widget>
    </item>
    <item row="2" column="1" alignment="Qt::AlignHCenter">
-    <widget class="QToolButton" name="toolButton_4">
+    <widget class="QToolButton" name="mUnlinkSelectedButton">
      <property name="text">
       <string>&lt;</string>
      </property>
     </widget>
    </item>
    <item row="1" column="1" alignment="Qt::AlignHCenter">
-    <widget class="QToolButton" name="toolButton">
+    <widget class="QToolButton" name="mLinkSelectedButton">
      <property name="text">
       <string>&gt;</string>
      </property>
@@ -59,7 +59,7 @@
     </spacer>
    </item>
    <item row="4" column="1" alignment="Qt::AlignHCenter">
-    <widget class="QToolButton" name="toolButton_2">
+    <widget class="QToolButton" name="mUnlinkAllButton">
      <property name="text">
       <string>&lt;&lt;</string>
      </property>
@@ -90,15 +90,19 @@
        </property>
       </widget>
      </item>
-     <item row="0" column="1">
-      <widget class="QPushButton" name="pushButton">
-       <property name="text">
-        <string>Select on Map</string>
+     <item row="1" column="0" colspan="2">
+      <widget class="QListView" name="mFeaturesListViewLeft">
+       <property name="selectionMode">
+        <enum>QAbstractItemView::ExtendedSelection</enum>
        </property>
       </widget>
      </item>
-     <item row="1" column="0" colspan="2">
-      <widget class="QListView" name="mFeaturesListViewLeft"/>
+     <item row="0" column="1">
+      <widget class="QToolButton" name="mZoomToFeatureLeftButton">
+       <property name="text">
+        <string>Zoom to feature</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>
@@ -111,24 +115,19 @@
        </property>
       </widget>
      </item>
-     <item row="1" column="0">
-      <widget class="QListView" name="mFeaturesListViewRight"/>
-     </item>
      <item row="0" column="1">
-      <spacer name="verticalSpacer_3">
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
+      <widget class="QToolButton" name="mZoomToFeatureRightButton">
+       <property name="text">
+        <string>Zoom to feature</string>
        </property>
-       <property name="sizeType">
-        <enum>QSizePolicy::Fixed</enum>
+      </widget>
+     </item>
+     <item row="1" column="0" colspan="2">
+      <widget class="QListView" name="mFeaturesListViewRight">
+       <property name="selectionMode">
+        <enum>QAbstractItemView::ExtendedSelection</enum>
        </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>20</width>
-         <height>34</height>
-        </size>
-       </property>
-      </spacer>
+      </widget>
      </item>
     </layout>
    </item>

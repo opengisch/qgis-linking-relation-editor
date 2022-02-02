@@ -13,14 +13,19 @@ from enum import IntEnum
 from qgis.PyQt.QtCore import (
     Qt,
     QTimer,
+    QT_VERSION_STR
 )
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QButtonGroup
+from qgis.PyQt.QtWidgets import (
+    QButtonGroup,
+    QDialog
+)
 from qgis.PyQt.uic import loadUiType
 from qgis.core import (
     Qgis,
     QgsApplication,
     QgsFeatureRequest,
+    QgsGeometry,
     QgsLogger,
     QgsMessageLog,
     QgsProject,
@@ -144,14 +149,17 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
         self.mStackedWidget.addWidget(self.mDualView)
 
-        self.mViewModeButtonGroup.idClicked.connect(self.setViewMode)
+        if QT_VERSION_STR < '5.15.0':
+            self.mViewModeButtonGroup.buttonClicked.connect(self.setViewModeButton)
+        else:
+            self.mViewModeButtonGroup.idClicked.connect(self.setViewMode)
         self.mToggleEditingButton.clicked.connect(self.toggleEditing)
         self.mSaveEditsButton.clicked.connect(self.saveEdits)
         self.mAddFeatureButton.clicked.connect(self.addFeature)
         self.mAddFeatureGeometryButton.clicked.connect(self.addFeatureGeometry)
         self.mDuplicateFeatureButton.clicked.connect(self.duplicateSelectedFeatures)
         self.mDeleteFeatureButton.clicked.connect(self.deleteSelectedFeatures)
-        self.mLinkFeatureButton.clicked.connect(self._linkFeature)
+        self.mLinkFeatureButton.clicked.connect(self._execLinkFeatureDialog)
         self.mUnlinkFeatureButton.clicked.connect(self.unlinkSelectedFeatures)
         self.mZoomToFeatureButton.clicked.connect(self.zoomToSelectedFeatures)
         self.mMultiEditTreeWidget.itemSelectionChanged.connect(self.multiEditItemSelectionChanged)
@@ -451,7 +459,7 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
     def duplicateSelectedFeatures(self):
         self.duplicateFeatures(self.mFeatureSelectionMgr.selectedFeatureIds())
 
-    def _linkFeature(self):
+    def _execLinkFeatureDialog(self):
 
         layer = None
 
@@ -464,16 +472,98 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
             layer = self.relation().referencingLayer()
 
-        selectionDlg = RelationEditorLinkChildManagerDialog(layer,
-                                                            self.relation().referencedLayer(),
-                                                            self.feature(),
-                                                            self.relation(),
-                                                            self.nmRelation(),
-                                                            self)
-        selectionDlg.setAttribute(Qt.WA_DeleteOnClose)
+        relationEditorLinkChildManagerDialog = RelationEditorLinkChildManagerDialog(layer,
+                                                                                    self.relation().referencedLayer(),
+                                                                                    self.feature(),
+                                                                                    self.relation(),
+                                                                                    self.nmRelation(),
+                                                                                    self.editorContext(),
+                                                                                    self)
 
-        #selectionDlg.accepted.connect(self_onLinkFeatureDlgAccepted)
-        selectionDlg.show()
+        if relationEditorLinkChildManagerDialog.exec() == QDialog.Accepted:
+            self.unlinkFeatures(relationEditorLinkChildManagerDialog.getFeatureIdsToUnlink())
+            self._linkFeatures(relationEditorLinkChildManagerDialog.getFeatureIdsToLink())
+
+    def _linkFeatures(self,
+                      featureIds):
+
+        if len(featureIds) == 0:
+            return
+
+        if self.nmRelation().isValid():
+            # only normal relations support m:n relation
+            assert(self.nmRelation().type() == QgsRelation.Normal)
+
+            # Fields of the linking table
+            fields = self.relation().referencingLayer().fields()
+
+            linkAttributes = dict()
+
+            if self.relation().type() == QgsRelation.Generated:
+                polyRel = self.relation().polymorphicRelation()
+                assert(polyRel.isValid())
+
+                linkAttributes.insert(fields.indexFromName(polyRel.referencedLayerField()),
+                                      polyRel.layerRepresentation(self.relation().referencedLayer()))
+
+            linkFeatureDataList = []
+            for relatedFeature in self.nmRelation().referencedLayer().getFeatures(QgsFeatureRequest().setFilterFids(featureIds)
+                                                                                                     .setSubsetOfAttributes(self.nmRelation().referencedFields())):
+                for editFeature in self._featureList():
+                    for referencingField, referencedField in self.relation().fieldPairs().items():
+                        index = fields.indexOf(referencingField)
+                        linkAttributes[index] = editFeature.attribute(referencedField)
+
+                    for referencingField, referencedField in self.nmRelation().fieldPairs().items():
+                        index = fields.indexOf(referencingField)
+                        linkAttributes[index] = relatedFeature.attribute(referencedField)
+
+                    linkFeatureDataList.append(QgsVectorLayerUtils.QgsFeatureData(QgsGeometry(), linkAttributes))
+
+            # Expression context for the linking table
+            context = self.relation().referencingLayer().createExpressionContext()
+
+            linkFeaturesList = QgsVectorLayerUtils.createFeatures(self.relation().referencingLayer(),
+                                                                  linkFeatureDataList,
+                                                                  context)
+
+            self.relation().referencingLayer().addFeatures(linkFeaturesList)
+            ids = []
+            for f in linkFeaturesList:
+                ids.append(f.id())
+            self.relation().referencingLayer().selectByIds(ids)
+        else:
+            if self._multiEditModeActive():
+                QgsLogger.warning(self.tr("For 1:n relations is not possible to link to multiple features"))
+                return
+
+            keys = dict()
+            for referencingField, referencedField in self.relation().fieldPairs().items():
+                idx = self.relation().referencingLayer().fields().lookupField(referencingField)
+                val = self.feature().attribute(referencedField)
+                keys[idx] = val
+
+            for fid in featureIds:
+                referencingLayer = self.relation().referencingLayer()
+                if self.relation().type() == QgsRelation.Generated:
+                    polyRel = self.relation().polymorphicRelation()
+
+                    assert(polyRel.isValid())
+
+                    self.relation().referencingLayer().changeAttributeValue(fid,
+                                                                            referencingLayer.fields().indexFromName(polyRel.referencedLayerField()),
+                                                                            polyRel.layerRepresentation(self.relation().referencedLayer()))
+
+                for key, value in keys.items():
+                    referencingLayer.changeAttributeValue(fid,
+                                                          key,
+                                                          value)
+
+        self.updateUi()
+
+        # relatedFeaturesChanged available since QGIS 3.24
+        if Qgis.QGIS_VERSION_INT >= 32400:
+            self.relatedFeaturesChanged.emit()
 
     def multiEditItemSelectionChanged(self):
         selectedItems = self.mMultiEditTreeWidget.selectedItems()
@@ -522,6 +612,14 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
             return self.mFeatureSelectionMgr.selectedFeatureIds()
 
     def setViewMode(self, mode: QgsDualView.ViewMode):
+        self.mDualView.setView(mode)
+        self.mViewMode = mode
+
+    def setViewModeButton(self, button):
+        mode = QgsDualView.AttributeEditor
+        if button == self.mTableViewButton:
+            mode = QgsDualView.AttributeTable
+        
         self.mDualView.setView(mode)
         self.mViewMode = mode
 
@@ -587,3 +685,10 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
             return False
         else:
             return self.multiEditModeActive()
+
+    def _featureList(self):
+        # featureList available since QGIS 3.24
+        if Qgis.QGIS_VERSION_INT < 32400:
+            return [self.feature()]
+        else:
+            return self.featureList()
