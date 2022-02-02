@@ -156,7 +156,7 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
 
         if self._nmRelation.isValid():
             filters = []
-            for joinTableFeature in feature_list:
+            for joinTableFeatureId, joinTableFeature in linkedFeatures.items():
                 referencedFeatureRequest = self._nmRelation.getReferencedFeatureRequest(joinTableFeature)
                 filterExpression = referencedFeatureRequest.filterExpression()
                 filters.append("(" + filterExpression.expression() + ")")

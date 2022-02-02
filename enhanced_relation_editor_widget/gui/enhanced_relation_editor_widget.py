@@ -25,6 +25,7 @@ from qgis.core import (
     Qgis,
     QgsApplication,
     QgsFeatureRequest,
+    QgsGeometry,
     QgsLogger,
     QgsMessageLog,
     QgsProject,
@@ -496,7 +497,7 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
             # Fields of the linking table
             fields = self.relation().referencingLayer().fields()
 
-            linkAttributes = QgsAttributeMap()
+            linkAttributes = dict()
 
             if self.relation().type() == QgsRelation.Generated:
                 polyRel = self.relation().polymorphicRelation()
@@ -505,17 +506,17 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
                 linkAttributes.insert(fields.indexFromName(polyRel.referencedLayerField()),
                                       polyRel.layerRepresentation(self.relation().referencedLayer()))
 
-            linkFeatureDataList = QgsVectorLayerUtils.QgsFeaturesDataList()
+            linkFeatureDataList = []
             for relatedFeature in self.nmRelation().referencedLayer().getFeatures(QgsFeatureRequest().setFilterFids(featureIds)
                                                                                                      .setSubsetOfAttributes(self.nmRelation().referencedFields())):
                 for editFeature in self._featureList():
-                    for referencingField, referencedField in self.relation().fieldPairs():
+                    for referencingField, referencedField in self.relation().fieldPairs().items():
                         index = fields.indexOf(referencingField)
-                        linkAttributes.insert(index, editFeature.attribute(referencedField))
+                        linkAttributes[index] = editFeature.attribute(referencedField)
 
-                    for referencingField, referencedField in self.nmRelation().fieldPairs():
+                    for referencingField, referencedField in self.nmRelation().fieldPairs().items():
                         index = fields.indexOf(referencingField)
-                        linkAttributes.insert(index, relatedFeature.attribute(referencedField))
+                        linkAttributes[index] = relatedFeature.attribute(referencedField)
 
                     linkFeatureDataList.append(QgsVectorLayerUtils.QgsFeatureData(QgsGeometry(), linkAttributes))
 

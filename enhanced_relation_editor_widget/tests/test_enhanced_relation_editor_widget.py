@@ -1,6 +1,6 @@
 
-import os
-from qgis.PyQt.QtCore import QTemporaryDir
+
+from qgis.PyQt.QtWidgets import QWidget
 from qgis.core import (
     QgsFeature,
     QgsProject,
@@ -11,12 +11,12 @@ from qgis.testing import (
     unittest,
     start_app
 )
-from enhanced_relation_editor_widget.gui.relation_editor_link_child_manager_dialog import RelationEditorLinkChildManagerDialog
+from enhanced_relation_editor_widget.gui.enhanced_relation_editor_widget_factory import EnhancedRelationEditorWidget
 
 start_app()
 
 
-class TestRelationEditorLinkChildManagerDialog(unittest.TestCase):
+class TestEnhancedRelationEditorWidgetFactory(unittest.TestCase):
 
     def setUp(self):
         # create layer
@@ -124,57 +124,67 @@ class TestRelationEditorLinkChildManagerDialog(unittest.TestCase):
         QgsProject.instance().removeMapLayer(self.mLayer2)
         QgsProject.instance().removeMapLayer(self.mLayerJoin)
 
-    def test_Instantiate(self):
-
-        childLayer = QgsVectorLayer('Point?crs=epsg:4326&field=int:integer&field=int2:integer',
-                                    'childLayer',
-                                    'memory')
-        self.assertTrue(childLayer.isValid())
-
-        parentLayer = QgsVectorLayer('Point?crs=epsg:4326&field=int:integer&field=int2:integer',
-                                     'parentLayer',
-                                     'memory')
-        self.assertTrue(parentLayer.isValid())
-
-        dialog = RelationEditorLinkChildManagerDialog(childLayer,
-                                                      parentLayer,
-                                                      QgsFeature(),
-                                                      QgsRelation(),
-                                                      QgsRelation(),
-                                                      None)
-
-        self.assertEqual(dialog.mLayerNameLabel.text(), childLayer.name())
-
     def test_InstantiateRelation1N(self):
+        # Init a relation editor widget
+        parentWidget = QWidget()
+        relationEditorWidget = EnhancedRelationEditorWidget({},
+                                                            parentWidget)
+        relationEditorWidget.setRelations(self.mRelation,
+                                          QgsRelation())
 
-        parentFeature = QgsFeature()
-        for feature in self.mLayer1.getFeatures():
-            parentFeature = feature
+        for feature in self.mLayer2.getFeatures():
+            relationEditorWidget.setFeature(feature)
             break
 
-        self.assertTrue(parentFeature.isValid())
+        # Update ui
+        relationEditorWidget.updateUi()
 
-        dialog = RelationEditorLinkChildManagerDialog(self.mLayer2,
-                                                      self.mLayer1,
-                                                      parentFeature,
-                                                      self.mRelation,
-                                                      QgsRelation(),
-                                                      None)
+    def test_InstantiateRelation1N_linkFeatures(self):
+
+        # Init a relation editor widget
+        parentWidget = QWidget()
+        relationEditorWidget = EnhancedRelationEditorWidget({},
+                                                            parentWidget)
+        relationEditorWidget.setRelations(self.mRelation,
+                                          QgsRelation())
+
+        for feature in self.mLayer2.getFeatures():
+            relationEditorWidget.setFeature(feature)
+            break
+
+        # Update ui
+        relationEditorWidget.updateUi()
+
+        relationEditorWidget._linkFeatures([feature.id()])
 
     def test_InstantiateRelationNM(self):
+        # Init a relation editor widget
+        parentWidget = QWidget()
+        relationEditorWidget = EnhancedRelationEditorWidget({},
+                                                            parentWidget)
+        relationEditorWidget.setRelations(self.mRelation1N,
+                                          self.mRelationNM)
 
-        parentFeature = QgsFeature()
         for feature in self.mLayer1.getFeatures():
-            parentFeature = feature
+            relationEditorWidget.setFeature(feature)
             break
 
-        self.assertTrue(parentFeature.isValid())
+        # Update ui
+        relationEditorWidget.updateUi()
 
-        dialog = RelationEditorLinkChildManagerDialog(self.mLayer2,
-                                                      self.mLayer1,
-                                                      parentFeature,
-                                                      self.mRelation1N,
-                                                      self.mRelationNM,
-                                                      None)
+    def test_InstantiateRelationNM_linkFeatures(self):
+        # Init a relation editor widget
+        parentWidget = QWidget()
+        relationEditorWidget = EnhancedRelationEditorWidget({},
+                                                            parentWidget)
+        relationEditorWidget.setRelations(self.mRelation1N,
+                                          self.mRelationNM)
 
+        for feature in self.mLayer1.getFeatures():
+            relationEditorWidget.setFeature(feature)
+            break
 
+        # Update ui
+        relationEditorWidget.updateUi()
+
+        relationEditorWidget._linkFeatures([feature.id()])
