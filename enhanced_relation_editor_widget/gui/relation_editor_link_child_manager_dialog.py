@@ -62,8 +62,10 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self._nmRelation = nmRelation
         self._editorContext = editorContext
 
-        self._mapToolIdentify = QgsMapToolIdentifyFeature(self._canvas(),
-                                                          self._layer)
+        self._mapToolIdentify = None
+        if self._canvas():
+            self._mapToolIdentify = QgsMapToolIdentifyFeature(self._canvas(),
+                                                              self._layer)
         self._highlight = None
 
         # Ui setup
@@ -150,8 +152,9 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self._actionSelectOnMap.triggered.connect(self._selectOnMap)
         self._actionZoomToSelectedLeft.triggered.connect(self._zoomToSelectedLeft)
         self._actionZoomToSelectedRight.triggered.connect(self._zoomToSelectedRight)
-        self._mapToolIdentify.featureIdentified.connect(self._featureIdentified)
-        self._mapToolIdentify.deactivated.connect(self._mapToolDeactivated)
+        if self._mapToolIdentify:
+            self._mapToolIdentify.featureIdentified.connect(self._featureIdentified)
+            self._mapToolIdentify.deactivated.connect(self._mapToolDeactivated)
 
     def getFeatureIdsToUnlink(self):
         featureIdsToUnlink = []
@@ -347,6 +350,8 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self._highlight = None
 
     def _canvas(self):
+        if not self._editorContext:
+            return None
         return self._editorContext.mapCanvas()
 
 
