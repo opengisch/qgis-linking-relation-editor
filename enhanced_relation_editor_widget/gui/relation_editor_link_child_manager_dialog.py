@@ -9,11 +9,16 @@
 # -----------------------------------------------------------
 
 import os
-from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtCore import (
+    Qt,
+    QItemSelectionModel,
+    QTimer
+)
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import (
+    QAction,
     QDialog,
-    QAction
+    QMessageBox
 )
 from qgis.PyQt.uic import loadUiType
 from qgis.core import (
@@ -24,7 +29,14 @@ from qgis.core import (
     QgsVectorLayer,
     QgsVectorLayerUtils
 )
-from qgis.gui import QgsAttributeEditorContext
+from qgis.gui import (
+    QgsAttributeEditorContext,
+    QgsIdentifyMenu,
+    QgsHighlight,
+    QgsMapToolIdentifyFeature,
+    QgsMessageBar
+)
+from qgis.utils import iface
 from enhanced_relation_editor_widget.core.features_model import FeaturesModel
 
 
@@ -50,6 +62,10 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self._nmRelation = nmRelation
         self._editorContext = editorContext
 
+        self._mapToolIdentify = QgsMapToolIdentifyFeature(self._canvas(),
+                                                          self._layer)
+        self._highlight = None
+
         # Ui setup
         self.setupUi(self)
 
@@ -62,6 +78,8 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
                                       self.tr("Link all"))
         self._actionUnlinkAll = QAction(QgsApplication.getThemeIcon("/mActionDoubleArrowLeft.svg"),
                                         self.tr("Unlink all"))
+        self._actionSelectOnMap = QAction(QgsApplication.getThemeIcon("/mActionMapIdentification.svg"),
+                                          self.tr("Select features on map"))
         self._actionZoomToSelectedLeft = QAction(QgsApplication.getThemeIcon("/mActionZoomToSelected.svg"),
                                                  self.tr("Zoom To Feature(s)"))
         self._actionZoomToSelectedLeft.setToolTip(self.tr("Zoom to selected child feature(s)"))
@@ -71,18 +89,23 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
 
         # Tool buttons
         self.mLinkSelectedButton.setDefaultAction(self._actionLinkSelected)
-        self.mLinkSelectedButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
         self.mUnlinkSelectedButton.setDefaultAction(self._actionUnlinkSelected)
-        self.mUnlinkSelectedButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
         self.mLinkAllButton.setDefaultAction(self._actionLinkAll)
-        self.mLinkAllButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
         self.mUnlinkAllButton.setDefaultAction(self._actionUnlinkAll)
-        self.mUnlinkAllButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        self.mSelectOnMapButton.setDefaultAction(self._actionSelectOnMap)
         self.mZoomToFeatureLeftButton.setDefaultAction(self._actionZoomToSelectedLeft)
-        self.mZoomToFeatureLeftButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
-        self.mZoomToFeatureLeftButton.setVisible(self._layer.isSpatial())
         self.mZoomToFeatureRightButton.setDefaultAction(self._actionZoomToSelectedRight)
+
+        self.mLinkSelectedButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        self.mUnlinkSelectedButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        self.mLinkAllButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        self.mUnlinkAllButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        self.mSelectOnMapButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        self.mZoomToFeatureLeftButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
         self.mZoomToFeatureRightButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
+
+        self.mSelectOnMapButton.setVisible(self._layer.isSpatial())
+        self.mZoomToFeatureLeftButton.setVisible(self._layer.isSpatial())
         self.mZoomToFeatureRightButton.setVisible(self._layer.isSpatial())
 
         # ListView menu
@@ -124,8 +147,11 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self._actionUnlinkSelected.triggered.connect(self._unlinkSelected)
         self._actionLinkAll.triggered.connect(self._linkAll)
         self._actionUnlinkAll.triggered.connect(self._unlinkAll)
+        self._actionSelectOnMap.triggered.connect(self._selectOnMap)
         self._actionZoomToSelectedLeft.triggered.connect(self._zoomToSelectedLeft)
         self._actionZoomToSelectedRight.triggered.connect(self._zoomToSelectedRight)
+        self._mapToolIdentify.featureIdentified.connect(self._featureIdentified)
+        self._mapToolIdentify.deactivated.connect(self._mapToolDeactivated)
 
     def getFeatureIdsToUnlink(self):
         featureIdsToUnlink = []
@@ -214,24 +240,117 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
 
         self._featuresModelLeft.addFeaturesModelItems(featuresModelElements)
 
+    def _selectOnMap(self):
+
+        if not self._canvas():
+            return
+
+        self._mapToolIdentify.setLayer(self._layer)
+        self._setMapTool(self._mapToolIdentify)
+
+        title = self.tr("Relation {0} for {1}.").format(self._relation.name(),
+                                                        self._parentLayer.name())
+        msg = self.tr("Identify a feature of {0} to be associated. Press &lt;ESC&gt; to cancel.").format(self._layer.name())
+        self._messageBarItem = QgsMessageBar.createMessage(title,
+                                                           msg,
+                                                           self)
+        iface.messageBar().pushItem(self._messageBarItem)
+
     def _zoomToSelectedLeft(self):
-        if not self._editorContext.mapCanvas():
+        if not self._canvas():
             return
 
         selectedFeatureIds = self._featuresModelLeft.getSelectedFeatures()
         if len(selectedFeatureIds) == 0:
             return
 
-        self._editorContext.mapCanvas().zoomToFeatureIds(self._layer,
-                                                         selectedFeatureIds)
+        self._canvas().zoomToFeatureIds(self._layer,
+                                        selectedFeatureIds)
 
     def _zoomToSelectedRight(self):
-        if not self._editorContext.mapCanvas():
+        if not self._canvas():
             return
 
         selectedFeatureIds = self._featuresModelRight.getSelectedFeatures()
         if len(selectedFeatureIds) == 0:
             return
 
-        self._editorContext.mapCanvas().zoomToFeatureIds(self._layer,
-                                                         selectedFeatureIds)
+        self._canvas().zoomToFeatureIds(self._layer,
+                                        selectedFeatureIds)
+
+    def _featureIdentified(self,
+                           feature: QgsFeature):
+
+        # select this feature
+        if feature.isValid():
+            if not self._featuresModelRight.contains(feature.id()):
+
+                self.mFeaturesListViewLeft.selectionModel().clear()
+
+                index = self._featuresModelLeft.getFeatureIndex(feature.id())
+                self.mFeaturesListViewLeft.selectionModel().select(index, QItemSelectionModel.Select)
+
+                self._highlightFeature(feature)
+            else:
+                QMessageBox.warning(self._canvas().window(),
+                                    self.tr("Feature already linked"),
+                                    self.tr("Feature '{0}' already linked").format(feature.id()))
+
+        self._unsetMapTool()
+
+    def _setMapTool(self,
+                    mapTool):
+        self._canvas().setMapTool(mapTool)
+
+        self._canvas().window().raise_()
+        self._canvas().activateWindow()
+        self._canvas().setFocus()
+
+    def _unsetMapTool(self):
+        # this will call mapToolDeactivated
+        self._canvas().unsetMapTool(self._mapToolIdentify)
+
+    def _mapToolDeactivated(self):
+
+        self.window().raise_()
+        self.window().activateWindow()
+
+        iface.messageBar().popWidget(self._messageBarItem)
+
+    def _highlightFeature(self,
+                          feature: QgsFeature):
+
+        if not self._canvas():
+            return
+
+        if not feature.isValid():
+            return
+
+        if not feature.hasGeometry():
+            return
+
+        # highlight
+        self._highlight = QgsHighlight(self._canvas(),
+                                       feature,
+                                       self._layer)
+        QgsIdentifyMenu.styleHighlight(self._highlight)
+        self._highlight.show()
+
+        QTimer.singleShot(3000,
+                          self._deleteHighlight)
+
+    def _deleteHighlight(self):
+        if not self._highlight:
+            return
+
+        self._highlight.hide()
+        self._highlight = None
+
+    def _canvas(self):
+        return self._editorContext.mapCanvas()
+
+
+
+
+
+

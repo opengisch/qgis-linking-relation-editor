@@ -176,10 +176,6 @@ class FeaturesModel(QAbstractListModel):
             group = (map(itemgetter(1), g))
             group = list(map(int, group))
 
-            # self.beginRemoveRows(QModelIndex(),
-            #                      group[-1],
-            #                      len(group))
-
             featureModelElements.extend(self._modelFeatures[group[-1]:group[0] + 1])
             del self._modelFeatures[group[-1]:group[0] + 1]
 
@@ -195,3 +191,18 @@ class FeaturesModel(QAbstractListModel):
         self._modelFeatures = []
         self.endResetModel()
         return featureModelElements
+
+    def contains(self,
+                 featureId: int):
+        for feature in self._modelFeatures:
+            if feature.featureId() == featureId:
+                return True
+        return False
+
+    def getFeatureIndex(self,
+                        featureId: int):
+        for index in range(len(self._modelFeatures)):
+            if self._modelFeatures[index].featureId() == featureId:
+                return self.index(index, 0, QModelIndex())
+
+        return QModelIndex()
