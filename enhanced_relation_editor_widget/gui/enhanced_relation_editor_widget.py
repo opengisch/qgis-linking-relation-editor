@@ -693,6 +693,6 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
     def _relationEditorLinkChildManagerDialogAccepted(self):
         relationEditorLinkChildManagerDialog = self.sender()
-        self.unlinkFeatures(relationEditorLinkChildManagerDialog.getFeatureIdsToUnlink())
-        self._linkFeatures(relationEditorLinkChildManagerDialog.getFeatureIdsToLink())
+        self.unlinkFeatures(relationEditorLinkChildManagerDialog.get_feature_ids_to_unlink())
+        self._linkFeatures(relationEditorLinkChildManagerDialog.get_feature_ids_to_link())
         relationEditorLinkChildManagerDialog.deleteLater()
