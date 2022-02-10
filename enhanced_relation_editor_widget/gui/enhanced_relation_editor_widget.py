@@ -479,10 +479,8 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
                                                                                     self.nmRelation(),
                                                                                     self.editorContext(),
                                                                                     self)
-
-        if relationEditorLinkChildManagerDialog.exec() == QDialog.Accepted:
-            self.unlinkFeatures(relationEditorLinkChildManagerDialog.getFeatureIdsToUnlink())
-            self._linkFeatures(relationEditorLinkChildManagerDialog.getFeatureIdsToLink())
+        relationEditorLinkChildManagerDialog.accepted.connect(self._relationEditorLinkChildManagerDialogAccepted)
+        relationEditorLinkChildManagerDialog.show()
 
     def _linkFeatures(self,
                       featureIds):
@@ -692,3 +690,9 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
             return [self.feature()]
         else:
             return self.featureList()
+
+    def _relationEditorLinkChildManagerDialogAccepted(self):
+        relationEditorLinkChildManagerDialog = self.sender()
+        self.unlinkFeatures(relationEditorLinkChildManagerDialog.get_feature_ids_to_unlink())
+        self._linkFeatures(relationEditorLinkChildManagerDialog.get_feature_ids_to_link())
+        relationEditorLinkChildManagerDialog.deleteLater()

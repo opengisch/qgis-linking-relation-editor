@@ -46,20 +46,20 @@ class FeaturesModel(QAbstractListModel):
         def feature(self):
             return self._feature
 
-        def featureId(self):
+        def feature_id(self):
             return self._feature.id()
 
-        def featureState(self):
+        def feature_state(self):
             return self._featureState
 
-        def setFeatureState(self,
-                            featureState):
+        def set_feature_state(self,
+                              featureState):
             self._featureState = featureState
 
-        def displayString(self):
+        def display_string(self):
             return self._displayString
 
-        def displayIcon(self):
+        def display_icon(self):
             if self._featureState == FeaturesModel.FeatureState.Unlinked or self._featureState == FeaturesModel.FeatureState.Linked:
                 return QIcon()
             elif self._featureState == FeaturesModel.FeatureState.ToBeLinked:
@@ -80,8 +80,8 @@ class FeaturesModel(QAbstractListModel):
         self._layer = layer
         self._modelFeatures = []
         self._parentView = parentView
-        self.setFeatures(features,
-                         featureState)
+        self.set_features(features,
+                          featureState)
 
     def rowCount(self,
                  index: QModelIndex = ...) -> int:
@@ -95,10 +95,10 @@ class FeaturesModel(QAbstractListModel):
             return None
 
         if role == Qt.DisplayRole:
-            return self._modelFeatures[index.row()].displayString()
+            return self._modelFeatures[index.row()].display_string()
 
         if role == Qt.DecorationRole:
-            return self._modelFeatures[index.row()].displayIcon()
+            return self._modelFeatures[index.row()].display_icon()
 
         return None
 
@@ -120,23 +120,23 @@ class FeaturesModel(QAbstractListModel):
     def supportedDropActions(self):
         return Qt.MoveAction
 
-    def setFeatures(self,
-                    features,
-                    featuresState):
+    def set_features(self,
+                     features,
+                     features_state):
         self.beginResetModel()
 
         self._modelFeatures = []
         for feature in features:
             self._modelFeatures.append(FeaturesModel.FeaturesModelItem(feature,
-                                                                       featuresState,
+                                                                       features_state,
                                                                        self._layer))
 
         self.endResetModel()
 
-    def getAllFeatureItems(self):
+    def get_all_feature_items(self):
         return self._modelFeatures
 
-    def getSelectedFeatures(self):
+    def get_selected_features(self):
         indexes = [modelIndex.row() for modelIndex in self._parentView.selectedIndexes()]
         if not indexes:
             return []
@@ -147,15 +147,15 @@ class FeaturesModel(QAbstractListModel):
 
         return selectedFeatures
 
-    def addFeaturesModelItems(self,
-                              featureModelElements):
+    def add_features_model_items(self,
+                                 feature_model_elements):
         self.beginInsertRows(QModelIndex(),
                              self.rowCount(),
-                             self.rowCount() + len(featureModelElements))
-        self._modelFeatures.extend(featureModelElements)
+                             self.rowCount() + len(feature_model_elements))
+        self._modelFeatures.extend(feature_model_elements)
         self.endInsertRows()
 
-    def takeSelectedItems(self):
+    def take_selected_items(self):
         indexes = [modelIndex.row() for modelIndex in self._parentView.selectedIndexes()]
         if not indexes:
             return []
@@ -176,10 +176,6 @@ class FeaturesModel(QAbstractListModel):
             group = (map(itemgetter(1), g))
             group = list(map(int, group))
 
-            # self.beginRemoveRows(QModelIndex(),
-            #                      group[-1],
-            #                      len(group))
-
             featureModelElements.extend(self._modelFeatures[group[-1]:group[0] + 1])
             del self._modelFeatures[group[-1]:group[0] + 1]
 
@@ -189,9 +185,24 @@ class FeaturesModel(QAbstractListModel):
 
         return featureModelElements
 
-    def takeAllItems(self):
+    def take_all_items(self):
         self.beginResetModel()
         featureModelElements = self._modelFeatures
         self._modelFeatures = []
         self.endResetModel()
         return featureModelElements
+
+    def contains(self,
+                 feature_id: int):
+        for feature in self._modelFeatures:
+            if feature.feature_id() == feature_id:
+                return True
+        return False
+
+    def get_feature_index(self,
+                          feature_id: int):
+        for index in range(len(self._modelFeatures)):
+            if self._modelFeatures[index].feature_id() == feature_id:
+                return self.index(index, 0, QModelIndex())
+
+        return QModelIndex()
