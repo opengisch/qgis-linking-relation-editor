@@ -14,7 +14,6 @@ from qgis.PyQt.QtCore import (
     QItemSelectionModel,
     QTimer
 )
-from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import (
     QAction,
     QDialog,
@@ -145,6 +144,8 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self.mFeaturesListViewRight.setModel(self._featuresModelRight)
 
         # Signal slots
+        self.accepted.connect(self._closing)
+        self.rejected.connect(self._closing)
         self._actionLinkSelected.triggered.connect(self._linkSelected)
         self._actionUnlinkSelected.triggered.connect(self._unlinkSelected)
         self._actionLinkAll.triggered.connect(self._linkAll)
@@ -354,8 +355,6 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
             return None
         return self._editorContext.mapCanvas()
 
-
-
-
-
-
+    def _closing(self):
+        self._deleteHighlight()
+        self._unsetMapTool()
