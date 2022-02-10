@@ -122,13 +122,13 @@ class FeaturesModel(QAbstractListModel):
 
     def set_features(self,
                      features,
-                     featuresState):
+                     features_state):
         self.beginResetModel()
 
         self._modelFeatures = []
         for feature in features:
             self._modelFeatures.append(FeaturesModel.FeaturesModelItem(feature,
-                                                                       featuresState,
+                                                                       features_state,
                                                                        self._layer))
 
         self.endResetModel()
@@ -148,11 +148,11 @@ class FeaturesModel(QAbstractListModel):
         return selectedFeatures
 
     def add_features_model_items(self,
-                                 featureModelElements):
+                                 feature_model_elements):
         self.beginInsertRows(QModelIndex(),
                              self.rowCount(),
-                             self.rowCount() + len(featureModelElements))
-        self._modelFeatures.extend(featureModelElements)
+                             self.rowCount() + len(feature_model_elements))
+        self._modelFeatures.extend(feature_model_elements)
         self.endInsertRows()
 
     def take_selected_items(self):
@@ -193,16 +193,16 @@ class FeaturesModel(QAbstractListModel):
         return featureModelElements
 
     def contains(self,
-                 featureId: int):
+                 feature_id: int):
         for feature in self._modelFeatures:
-            if feature.feature_id() == featureId:
+            if feature.feature_id() == feature_id:
                 return True
         return False
 
     def get_feature_index(self,
-                          featureId: int):
+                          feature_id: int):
         for index in range(len(self._modelFeatures)):
-            if self._modelFeatures[index].feature_id() == featureId:
+            if self._modelFeatures[index].feature_id() == feature_id:
                 return self.index(index, 0, QModelIndex())
 
         return QModelIndex()
