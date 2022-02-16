@@ -30,6 +30,7 @@ from qgis.core import (
 )
 from qgis.gui import (
     QgsAttributeEditorContext,
+    QgsFilterLineEdit,
     QgsIdentifyMenu,
     QgsHighlight,
     QgsMapToolIdentifyFeature,
@@ -39,7 +40,8 @@ from qgis.utils import iface
 from enhanced_relation_editor_widget.core.features_model import FeaturesModel
 
 
-WidgetUi, _ = loadUiType(os.path.join(os.path.dirname(__file__), '../ui/relation_editor_link_child_manager_dialog.ui'))
+WidgetUi, _ = loadUiType(os.path.join(os.path.dirname(__file__),
+                                      '../ui/relation_editor_link_child_manager_dialog.ui'))
 
 
 class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
@@ -79,6 +81,9 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
                                       self.tr("Link all"))
         self._actionUnlinkAll = QAction(QgsApplication.getThemeIcon("/mActionDoubleArrowLeft.svg"),
                                         self.tr("Unlink all"))
+        self._actionQuickFilter = QAction(QgsApplication.getThemeIcon("/mIndicatorFilter.svg"),
+                                          self.tr("Quick filter"))
+        self._actionQuickFilter.setCheckable(True)
         self._actionSelectOnMap = QAction(QgsApplication.getThemeIcon("/mActionMapIdentification.svg"),
                                           self.tr("Select features on map"))
         self._actionZoomToSelectedLeft = QAction(QgsApplication.getThemeIcon("/mActionZoomToSelected.svg"),
@@ -93,6 +98,7 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self.mUnlinkSelectedButton.setDefaultAction(self._actionUnlinkSelected)
         self.mLinkAllButton.setDefaultAction(self._actionLinkAll)
         self.mUnlinkAllButton.setDefaultAction(self._actionUnlinkAll)
+        self.mQuickFilterButton.setDefaultAction(self._actionQuickFilter)
         self.mSelectOnMapButton.setDefaultAction(self._actionSelectOnMap)
         self.mZoomToFeatureLeftButton.setDefaultAction(self._actionZoomToSelectedLeft)
         self.mZoomToFeatureRightButton.setDefaultAction(self._actionZoomToSelectedRight)
@@ -101,6 +107,7 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self.mUnlinkSelectedButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
         self.mLinkAllButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
         self.mUnlinkAllButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        self.mQuickFilterButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
         self.mSelectOnMapButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
         self.mZoomToFeatureLeftButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
         self.mZoomToFeatureRightButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
@@ -143,6 +150,8 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
                                                  self)
         self.mFeaturesListViewRight.setModel(self._featuresModelRight)
 
+        self.mQuickFilterLineEdit.setVisible(False)
+
         # Signal slots
         self.accepted.connect(self._closing)
         self.rejected.connect(self._closing)
@@ -150,6 +159,7 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self._actionUnlinkSelected.triggered.connect(self._unlinkSelected)
         self._actionLinkAll.triggered.connect(self._linkAll)
         self._actionUnlinkAll.triggered.connect(self._unlinkAll)
+        self._actionQuickFilter.triggered.connect(self._quick_filter_triggered)
         self._actionSelectOnMap.triggered.connect(self._selectOnMap)
         self._actionZoomToSelectedLeft.triggered.connect(self._zoomToSelectedLeft)
         self._actionZoomToSelectedRight.triggered.connect(self._zoomToSelectedRight)
@@ -243,6 +253,12 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
                 featuresModelElement.set_feature_state(FeaturesModel.FeatureState.ToBeUnlinked)
 
         self._featuresModelLeft.add_features_model_items(featuresModelElements)
+
+    def _quick_filter_triggered(self,
+                                checked: bool):
+        self.mQuickFilterLineEdit.setVisible(checked)
+        if checked:
+            self.mQuickFilterLineEdit.setFocus()
 
     def _selectOnMap(self):
 
