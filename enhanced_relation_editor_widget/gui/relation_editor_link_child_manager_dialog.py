@@ -167,6 +167,8 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
             self._mapToolIdentify.featureIdentified.connect(self._featureIdentified)
             self._mapToolIdentify.deactivated.connect(self._mapToolDeactivated)
 
+        self.mQuickFilterLineEdit.valueChanged.connect(self._quick_filter_value_changed)
+
     def get_feature_ids_to_unlink(self):
         featureIdsToUnlink = []
         for featureModelItem in self._featuresModelLeft.get_all_feature_items():
@@ -259,6 +261,10 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self.mQuickFilterLineEdit.setVisible(checked)
         if checked:
             self.mQuickFilterLineEdit.setFocus()
+
+    def _quick_filter_value_changed(self,
+                                    value: str):
+        filterrrrrrrrrr(value)
 
     def _selectOnMap(self):
 
