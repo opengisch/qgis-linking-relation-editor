@@ -277,7 +277,7 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         self.mLinkFeatureButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.Link))
         self.mUnlinkFeatureButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.Unlink))
         self.mSaveEditsButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.SaveChildEdits) and not self._layerInSameTransactionGroup)
-        self.mAddFeatureButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.AddChildFeature))
+        self.mAddFeatureButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.AddChildFeature) and not spatial)
         self.mAddFeatureGeometryButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.AddChildFeature) and bool(self.editorContext().mapCanvas()) and bool(self.editorContext().cadDockWidget()) and spatial)
         self.mDuplicateFeatureButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.DuplicateChildFeature))
         self.mDeleteFeatureButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.DeleteChildFeature))
