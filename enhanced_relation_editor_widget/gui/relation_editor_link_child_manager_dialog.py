@@ -9,6 +9,7 @@
 # -----------------------------------------------------------
 
 import os
+from enum import IntEnum
 from qgis.PyQt.QtCore import (
     Qt,
     QItemSelectionModel,
@@ -26,6 +27,7 @@ from qgis.core import (
     QgsFeatureRequest,
     QgsRelation,
     QgsVectorLayer,
+    QgsVectorLayerCache,
     QgsVectorLayerUtils
 )
 from qgis.gui import (
@@ -38,6 +40,7 @@ from qgis.gui import (
 )
 from qgis.utils import iface
 from enhanced_relation_editor_widget.core.features_model import FeaturesModel
+from enhanced_relation_editor_widget.core.features_model_filter import FeaturesModelFilter
 
 
 WidgetUi, _ = loadUiType(os.path.join(os.path.dirname(__file__),
@@ -139,14 +142,16 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self._featuresModelLeft = FeaturesModel(unlinkedFeatures,
                                                 FeaturesModel.FeatureState.Unlinked,
                                                 self._layer,
-                                                self.mFeaturesListViewLeft,
                                                 self)
-        self.mFeaturesListViewLeft.setModel(self._featuresModelLeft)
+
+        self._featuresModelFilterLeft = FeaturesModelFilter(self)
+        self._featuresModelFilterLeft.setSourceModel(self._featuresModelLeft)
+
+        self.mFeaturesListViewLeft.setModel(self._featuresModelFilterLeft)
 
         self._featuresModelRight = FeaturesModel(linkedFeatures,
                                                  FeaturesModel.FeatureState.Linked,
                                                  self._layer,
-                                                 self.mFeaturesListViewRight,
                                                  self)
         self.mFeaturesListViewRight.setModel(self._featuresModelRight)
 
@@ -217,7 +222,10 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         return linkedFeatures.values(), unlinkedFeatures
 
     def _linkSelected(self):
-        featuresModelElements = self._featuresModelLeft.take_selected_items()
+        featuresModelElements = []
+        for modelIndex in self.mFeaturesListViewLeft.selectedIndexes():
+            featuresModelElements.append(self._featuresModelLeft.take_item(modelIndex))
+
         for featuresModelElement in featuresModelElements:
             if featuresModelElement.feature_state() == FeaturesModel.FeatureState.ToBeUnlinked:
                 featuresModelElement.set_feature_state(FeaturesModel.FeatureState.Linked)
@@ -227,7 +235,10 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self._featuresModelRight.add_features_model_items(featuresModelElements)
 
     def _unlinkSelected(self):
-        featuresModelElements = self._featuresModelRight.take_selected_items()
+        featuresModelElements = []
+        for modelIndex in self.mFeaturesListViewRight.selectedIndexes():
+            featuresModelElements.append(self._featuresModelRight.take_item(modelIndex))
+
         for featuresModelElement in featuresModelElements:
             if featuresModelElement.feature_state() == FeaturesModel.FeatureState.ToBeLinked:
                 featuresModelElement.set_feature_state(FeaturesModel.FeatureState.Unlinked)
@@ -261,10 +272,13 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self.mQuickFilterLineEdit.setVisible(checked)
         if checked:
             self.mQuickFilterLineEdit.setFocus()
+            self._featuresModelFilterLeft.set_filter(self.mQuickFilterLineEdit.value())
+        else:
+            self._featuresModelFilterLeft.clear_filter()
 
     def _quick_filter_value_changed(self,
                                     value: str):
-        filterrrrrrrrrr(value)
+        self._featuresModelFilterLeft.set_filter(value)
 
     def _selectOnMap(self):
 
@@ -286,7 +300,11 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         if not self._canvas():
             return
 
-        selectedFeatureIds = self._featuresModelLeft.get_selected_features()
+        selectedFeatureIds = []
+        for modelIndex in self.mFeaturesListViewLeft.selectedIndexes():
+            selectedFeatureIds.append(self._featuresModelFilterLeft.data(modelIndex,
+                                                                         FeaturesModel.UserRole.FeatureId))
+
         if len(selectedFeatureIds) == 0:
             return
 
@@ -297,7 +315,11 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         if not self._canvas():
             return
 
-        selectedFeatureIds = self._featuresModelRight.get_selected_features()
+        selectedFeatureIds = []
+        for modelIndex in self.mFeaturesListViewRight.selectedIndexes():
+            selectedFeatureIds.append(self._featuresModelRight.data(modelIndex,
+                                                                    FeaturesModel.UserRole.FeatureId))
+
         if len(selectedFeatureIds) == 0:
             return
 
