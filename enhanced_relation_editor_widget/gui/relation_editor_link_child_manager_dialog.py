@@ -71,7 +71,7 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
             self._mapToolSelect = MapToolSelectRectangle(self._canvas(),
                                                          self._layer)
 
-        self._highlight = None
+        self._highlight = list()
 
         # Ui setup
         self.setupUi(self)
@@ -330,21 +330,28 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
     def _slot_map_tool_select_finished(self,
                                        features: list):
 
+        self.mFeaturesListViewLeft.selectionModel().reset()
+
+        already_linked_features = list()
         for feature in features:
             # select this feature
-            if feature.isValid():
-                if not self._featuresModelRight.contains(feature.id()):
+            if not feature.isValid():
+                continue
 
-                    self.mFeaturesListViewLeft.selectionModel().clear()
+            if self._featuresModelRight.contains(feature.id()):
+                already_linked_features.append(str(feature.id()))
+                continue
 
-                    index = self._featuresModelLeft.get_feature_index(feature.id())
-                    self.mFeaturesListViewLeft.selectionModel().select(index, QItemSelectionModel.Select)
+            index = self._featuresModelLeft.get_feature_index(feature.id())
 
-                    self._highlightFeature(feature)
-                else:
-                    QMessageBox.warning(self._canvas().window(),
-                                        self.tr("Feature already linked"),
-                                        self.tr("Feature '{0}' already linked").format(feature.id()))
+            self.mFeaturesListViewLeft.selectionModel().select(index,
+                                                               QItemSelectionModel.Select)
+            self._highlightFeature(feature)
+
+        if already_linked_features:
+            QMessageBox.warning(self._canvas().window(),
+                                self.tr("Feature already linked"),
+                                self.tr("Some feature(s) are already linked: '{0}'").format(', '.join(already_linked_features)))
 
         #  self.show()
         self._unsetMapTool()
@@ -380,13 +387,13 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         if not feature.hasGeometry():
             return
 
-        # highlight
-        self._highlight = QgsHighlight(self._canvas(),
-                                       feature,
-                                       self._layer)
-        QgsIdentifyMenu.styleHighlight(self._highlight)
-        self._highlight.show()
-
+        # Highlight selected features shortly
+        highlight = QgsHighlight(self._canvas(),
+                                 feature,
+                                 self._layer)
+        QgsIdentifyMenu.styleHighlight(highlight)
+        highlight.show()
+        self._highlight.append(highlight)
         QTimer.singleShot(3000,
                           self._deleteHighlight)
 
@@ -394,8 +401,8 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         if not self._highlight:
             return
 
-        self._highlight.hide()
-        self._highlight = None
+        highlight = self._highlight[0].hide()
+        del self._highlight[0]
 
     def _canvas(self):
         if not self._editorContext:
