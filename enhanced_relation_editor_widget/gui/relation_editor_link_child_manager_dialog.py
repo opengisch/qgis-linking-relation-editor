@@ -35,12 +35,12 @@ from qgis.gui import (
     QgsFilterLineEdit,
     QgsIdentifyMenu,
     QgsHighlight,
-    QgsMapToolIdentifyFeature,
     QgsMessageBar
 )
 from qgis.utils import iface
 from enhanced_relation_editor_widget.core.features_model import FeaturesModel
 from enhanced_relation_editor_widget.core.features_model_filter import FeaturesModelFilter
+from enhanced_relation_editor_widget.gui.map_tool_select_rectangle import MapToolSelectRectangle
 
 
 WidgetUi, _ = loadUiType(os.path.join(os.path.dirname(__file__),
@@ -66,10 +66,11 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self._nmRelation = nmRelation
         self._editorContext = editorContext
 
-        self._mapToolIdentify = None
+        self._mapToolSelect = None
         if self._canvas():
-            self._mapToolIdentify = QgsMapToolIdentifyFeature(self._canvas(),
-                                                              self._layer)
+            self._mapToolSelect = MapToolSelectRectangle(self._canvas(),
+                                                         self._layer)
+
         self._highlight = None
 
         # Ui setup
@@ -168,9 +169,9 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self._actionSelectOnMap.triggered.connect(self._selectOnMap)
         self._actionZoomToSelectedLeft.triggered.connect(self._zoomToSelectedLeft)
         self._actionZoomToSelectedRight.triggered.connect(self._zoomToSelectedRight)
-        if self._mapToolIdentify:
-            self._mapToolIdentify.featureIdentified.connect(self._featureIdentified)
-            self._mapToolIdentify.deactivated.connect(self._mapToolDeactivated)
+        if self._mapToolSelect:
+            self._mapToolSelect.signal_selection_finished.connect(self._slot_map_tool_select_finished)
+            self._mapToolSelect.deactivated.connect(self._mapToolDeactivated)
 
         self.mQuickFilterLineEdit.valueChanged.connect(self._quick_filter_value_changed)
 
@@ -285,8 +286,8 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         if not self._canvas():
             return
 
-        self._mapToolIdentify.setLayer(self._layer)
-        self._setMapTool(self._mapToolIdentify)
+        iface.actionSelect().trigger()
+        self._setMapTool(self._mapToolSelect)
 
         title = self.tr("Relation {0} for {1}.").format(self._relation.name(),
                                                         self._parentLayer.name())
@@ -326,37 +327,39 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self._canvas().zoomToFeatureIds(self._layer,
                                         selectedFeatureIds)
 
-    def _featureIdentified(self,
-                           feature: QgsFeature):
+    def _slot_map_tool_select_finished(self,
+                                       features: list):
 
-        # select this feature
-        if feature.isValid():
-            if not self._featuresModelRight.contains(feature.id()):
+        for feature in features:
+            # select this feature
+            if feature.isValid():
+                if not self._featuresModelRight.contains(feature.id()):
 
-                self.mFeaturesListViewLeft.selectionModel().clear()
+                    self.mFeaturesListViewLeft.selectionModel().clear()
 
-                index = self._featuresModelLeft.get_feature_index(feature.id())
-                self.mFeaturesListViewLeft.selectionModel().select(index, QItemSelectionModel.Select)
+                    index = self._featuresModelLeft.get_feature_index(feature.id())
+                    self.mFeaturesListViewLeft.selectionModel().select(index, QItemSelectionModel.Select)
 
-                self._highlightFeature(feature)
-            else:
-                QMessageBox.warning(self._canvas().window(),
-                                    self.tr("Feature already linked"),
-                                    self.tr("Feature '{0}' already linked").format(feature.id()))
+                    self._highlightFeature(feature)
+                else:
+                    QMessageBox.warning(self._canvas().window(),
+                                        self.tr("Feature already linked"),
+                                        self.tr("Feature '{0}' already linked").format(feature.id()))
 
+        #  self.show()
         self._unsetMapTool()
 
     def _setMapTool(self,
                     mapTool):
+        #  self.hide() TODO Is it possible to hide the parent feature form too?
         self._canvas().setMapTool(mapTool)
-
         self._canvas().window().raise_()
         self._canvas().activateWindow()
         self._canvas().setFocus()
 
     def _unsetMapTool(self):
         # this will call mapToolDeactivated
-        self._canvas().unsetMapTool(self._mapToolIdentify)
+        self._canvas().unsetMapTool(self._mapToolSelect)
 
     def _mapToolDeactivated(self):
 
