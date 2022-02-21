@@ -51,19 +51,34 @@ class MapToolSelectRectangle(QgsMapToolEmitPoint):
 
         geometry = self.geometry()
 
-        features = list()
-        if geometry:
+        if not geometry:
+            self.signal_selection_finished.emit(list())
+            return
 
-            if isinstance(geometry,
-                          QgsRectangle):
-                for feature in self._layer.getFeatures(geometry):
-                    features.append(feature)
+        if isinstance(geometry,
+                      QgsRectangle):
+            features = list()
+            for feature in self._layer.getFeatures(geometry):
+                features.append(feature)
 
-            if isinstance(geometry,
-                          QgsPointXY):
-                pass  # TODO
+            self.signal_selection_finished.emit(features)
+            return
 
-        self.signal_selection_finished.emit(features)
+        if isinstance(geometry,
+                      QgsPointXY):
+
+            search_radius = self.searchRadiusMU(self.canvas)
+            search_rectangle = QgsRectangle(geometry.x() - search_radius,
+                                            geometry.y() - search_radius,
+                                            geometry.x() + search_radius,
+                                            geometry.y() + search_radius)
+
+            for feature in self._layer.getFeatures(search_rectangle):
+                self.signal_selection_finished.emit([feature])
+                return
+
+            self.signal_selection_finished.emit(list())
+            return
 
     def canvasMoveEvent(self, e):
         if not self.isEmittingPoint:
@@ -92,8 +107,7 @@ class MapToolSelectRectangle(QgsMapToolEmitPoint):
         if self.startPoint is None or self.endPoint is None:
             return None
 
-        if(self.startPoint.x() == self.endPoint.x() and
-           self.startPoint.y() == self.endPoint.y()):
+        if self.startPoint == self.endPoint:
             return self.startPoint
 
         if(self.startPoint.x() == self.endPoint.x() or
@@ -105,4 +119,5 @@ class MapToolSelectRectangle(QgsMapToolEmitPoint):
 
     def _slot_deactivated(self):
         self.rubberBand.reset(QgsWkbTypes.PolygonGeometry)
+
 
