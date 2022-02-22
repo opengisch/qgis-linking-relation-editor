@@ -20,6 +20,9 @@ from qgis.PyQt.QtCore import (
     QObject
 )
 from qgis.core import (
+    QgsExpression,
+    QgsExpressionContext,
+    QgsExpressionContextUtils,
     QgsFeature,
     QgsVectorLayer,
     QgsVectorLayerUtils
@@ -44,6 +47,7 @@ class FeaturesModel(QAbstractListModel):
                      layer: QgsVectorLayer):
             self._feature = feature
             self._featureState = featureState
+            self._layer = layer
             self._displayString = QgsVectorLayerUtils.getFeatureDisplayString(layer, feature)
 
         def feature(self):
@@ -71,6 +75,14 @@ class FeaturesModel(QAbstractListModel):
                 return QIcon(os.path.join(os.path.dirname(__file__), '../images/mActionToBeUnlinked.svg'))
 
             return QIcon()
+
+        def tool_tip(self):
+            subContext = QgsExpressionContext()
+            subContext.appendScopes(QgsExpressionContextUtils.globalProjectLayerScopes(self._layer))
+            subContext.setFeature(self._feature)
+
+            return QgsExpression.replaceExpressionText(self._layer.mapTipTemplate(),
+                                                       subContext)
 
     def __init__(self,
                  features,
@@ -100,6 +112,9 @@ class FeaturesModel(QAbstractListModel):
 
         if role == Qt.DecorationRole:
             return self._modelFeatures[index.row()].display_icon()
+
+        if role == Qt.ToolTipRole:
+            return self._modelFeatures[index.row()].tool_tip()
 
         if role == FeaturesModel.UserRole.FeatureId:
             return self._modelFeatures[index.row()].feature_id()
