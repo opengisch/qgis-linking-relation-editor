@@ -250,7 +250,14 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self._featuresModelLeft.add_features_model_items(featuresModelElements)
 
     def _linkAll(self):
-        featuresModelElements = self._featuresModelLeft.take_all_items()
+        featuresModelElements = list()
+        if self._featuresModelFilterLeft.filter_active():
+            for row in reversed(range(self._featuresModelFilterLeft.rowCount())):
+                modelIndex = self._featuresModelFilterLeft.index(row, 0)
+                sourceModelIndex = self._featuresModelFilterLeft.mapToSource(modelIndex)
+                featuresModelElements.append(self._featuresModelLeft.take_item(sourceModelIndex))
+        else:
+            featuresModelElements = self._featuresModelLeft.take_all_items()
         for featuresModelElement in featuresModelElements:
             if featuresModelElement.feature_state() == FeaturesModel.FeatureState.ToBeUnlinked:
                 featuresModelElement.set_feature_state(FeaturesModel.FeatureState.Linked)
@@ -274,13 +281,13 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self.mQuickFilterLineEdit.setVisible(checked)
         if checked:
             self.mQuickFilterLineEdit.setFocus()
-            self._featuresModelFilterLeft.set_filter(self.mQuickFilterLineEdit.value())
+            self._featuresModelFilterLeft.set_quick_filter(self.mQuickFilterLineEdit.value())
         else:
-            self._featuresModelFilterLeft.clear_filter()
+            self._featuresModelFilterLeft.clear_quick_filter()
 
     def _quick_filter_value_changed(self,
                                     value: str):
-        self._featuresModelFilterLeft.set_filter(value)
+        self._featuresModelFilterLeft.set_quick_filter(value)
 
     def _map_filter_triggered(self,
                               checked: bool):
@@ -295,8 +302,8 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
                                                             self._parentLayer.name())
             msg = self.tr("Identify a feature of {0} to be associated. Press &lt;ESC&gt; to cancel.").format(self._layer.name())
             self._messageBarItem = QgsMessageBar.createMessage(title,
-                                                            msg,
-                                                            self)
+                                                               msg,
+                                                               self)
             iface.messageBar().pushItem(self._messageBarItem)
 
         else:

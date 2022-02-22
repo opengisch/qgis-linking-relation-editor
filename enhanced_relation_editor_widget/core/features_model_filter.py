@@ -14,17 +14,20 @@ class FeaturesModelFilter(QSortFilterProxyModel):
                  parent: QObject = None):
         super().__init__(parent)
 
-        self._filter = str()
+        self._quick_filter = str()
         self._map_filter = list()
 
-    def set_filter(self,
-                   filter: str):
-        self._filter = filter
+    def set_quick_filter(self,
+                         filter: str):
+        self._quick_filter = filter
         self.invalidateFilter()
 
-    def clear_filter(self):
-        self._filter = str()
+    def clear_quick_filter(self):
+        self._quick_filter = str()
         self.invalidateFilter()
+
+    def quick_filter_active(self):
+        return len(self._quick_filter) > 0
 
     def set_map_filter(self,
                        map_filter: list()):
@@ -34,6 +37,12 @@ class FeaturesModelFilter(QSortFilterProxyModel):
     def clear_map_filter(self):
         self._map_filter = list()
         self.invalidateFilter()
+
+    def map_filter_active(self):
+        return len(self._map_filter) > 0
+
+    def filter_active(self):
+        return self.quick_filter_active() or self.map_filter_active()
 
     def filterAcceptsRow(self,
                          sourceRow: int,
@@ -50,7 +59,7 @@ class FeaturesModelFilter(QSortFilterProxyModel):
             if rowFeatureId not in self._map_filter:
                 return False
 
-        if len(self._filter) == 0:
+        if len(self._quick_filter) == 0:
             return True
 
         rowDisplayRole = self.sourceModel().data(index,
@@ -58,6 +67,6 @@ class FeaturesModelFilter(QSortFilterProxyModel):
         if not rowDisplayRole:
             return False
 
-        return self._filter in rowDisplayRole
+        return self._quick_filter in rowDisplayRole
 
 
