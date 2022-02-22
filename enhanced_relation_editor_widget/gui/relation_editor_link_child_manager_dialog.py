@@ -88,8 +88,9 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self._actionQuickFilter = QAction(QgsApplication.getThemeIcon("/mIndicatorFilter.svg"),
                                           self.tr("Quick filter"))
         self._actionQuickFilter.setCheckable(True)
-        self._actionSelectOnMap = QAction(QgsApplication.getThemeIcon("/mActionMapIdentification.svg"),
+        self._actionMapFilter = QAction(QgsApplication.getThemeIcon("/mActionMapIdentification.svg"),
                                           self.tr("Select features on map"))
+        self._actionMapFilter.setCheckable(True)
         self._actionZoomToSelectedLeft = QAction(QgsApplication.getThemeIcon("/mActionZoomToSelected.svg"),
                                                  self.tr("Zoom To Feature(s)"))
         self._actionZoomToSelectedLeft.setToolTip(self.tr("Zoom to selected child feature(s)"))
@@ -103,7 +104,7 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self.mLinkAllButton.setDefaultAction(self._actionLinkAll)
         self.mUnlinkAllButton.setDefaultAction(self._actionUnlinkAll)
         self.mQuickFilterButton.setDefaultAction(self._actionQuickFilter)
-        self.mSelectOnMapButton.setDefaultAction(self._actionSelectOnMap)
+        self.mSelectOnMapButton.setDefaultAction(self._actionMapFilter)
         self.mZoomToFeatureLeftButton.setDefaultAction(self._actionZoomToSelectedLeft)
         self.mZoomToFeatureRightButton.setDefaultAction(self._actionZoomToSelectedRight)
 
@@ -166,7 +167,7 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self._actionLinkAll.triggered.connect(self._linkAll)
         self._actionUnlinkAll.triggered.connect(self._unlinkAll)
         self._actionQuickFilter.triggered.connect(self._quick_filter_triggered)
-        self._actionSelectOnMap.triggered.connect(self._selectOnMap)
+        self._actionMapFilter.triggered.connect(self._map_filter_triggered)
         self._actionZoomToSelectedLeft.triggered.connect(self._zoomToSelectedLeft)
         self._actionZoomToSelectedRight.triggered.connect(self._zoomToSelectedRight)
         if self._mapToolSelect:
@@ -281,21 +282,25 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
                                     value: str):
         self._featuresModelFilterLeft.set_filter(value)
 
-    def _selectOnMap(self):
-
+    def _map_filter_triggered(self,
+                              checked: bool):
         if not self._canvas():
             return
 
-        iface.actionSelect().trigger()
-        self._setMapTool(self._mapToolSelect)
+        if checked:
+            iface.actionSelect().trigger()
+            self._setMapTool(self._mapToolSelect)
 
-        title = self.tr("Relation {0} for {1}.").format(self._relation.name(),
-                                                        self._parentLayer.name())
-        msg = self.tr("Identify a feature of {0} to be associated. Press &lt;ESC&gt; to cancel.").format(self._layer.name())
-        self._messageBarItem = QgsMessageBar.createMessage(title,
-                                                           msg,
-                                                           self)
-        iface.messageBar().pushItem(self._messageBarItem)
+            title = self.tr("Relation {0} for {1}.").format(self._relation.name(),
+                                                            self._parentLayer.name())
+            msg = self.tr("Identify a feature of {0} to be associated. Press &lt;ESC&gt; to cancel.").format(self._layer.name())
+            self._messageBarItem = QgsMessageBar.createMessage(title,
+                                                            msg,
+                                                            self)
+            iface.messageBar().pushItem(self._messageBarItem)
+
+        else:
+            self._featuresModelFilterLeft.clear_map_filter()
 
     def _zoomToSelectedLeft(self):
         if not self._canvas():
@@ -333,6 +338,7 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self.mFeaturesListViewLeft.selectionModel().reset()
 
         already_linked_features = list()
+        map_filter_features = list()
         for feature in features:
             # select this feature
             if not feature.isValid():
@@ -342,16 +348,18 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
                 already_linked_features.append(str(feature.id()))
                 continue
 
-            index = self._featuresModelLeft.get_feature_index(feature.id())
-
-            self.mFeaturesListViewLeft.selectionModel().select(index,
-                                                               QItemSelectionModel.Select)
+            map_filter_features.append(feature.id())
             self._highlightFeature(feature)
 
         if already_linked_features:
             QMessageBox.warning(self._canvas().window(),
                                 self.tr("Feature already linked"),
                                 self.tr("Some feature(s) are already linked: '{0}'").format(', '.join(already_linked_features)))
+
+        if map_filter_features:
+            self._featuresModelFilterLeft.set_map_filter(map_filter_features)
+        else:
+            self._actionMapFilter.setChecked(False)
 
         #  self.show()
         self._unsetMapTool()
