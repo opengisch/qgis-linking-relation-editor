@@ -40,6 +40,12 @@ class MapToolSelectRectangle(QgsMapToolEmitPoint):
         self.isEmittingPoint = False
         self.rubberBand.reset(True)
 
+    def keyPressEvent(self,
+                      keyEvent):
+        if keyEvent.key() == Qt.Key_Escape:
+            self.reset()
+            self.signal_selection_finished.emit(list())
+
     def canvasPressEvent(self, e):
         self.startPoint = self.toMapCoordinates(e.pos())
         self.endPoint = self.startPoint
