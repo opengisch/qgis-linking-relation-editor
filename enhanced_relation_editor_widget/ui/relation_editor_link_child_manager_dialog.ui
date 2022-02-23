@@ -83,28 +83,21 @@
    </item>
    <item row="0" column="0" rowspan="6">
     <layout class="QGridLayout" name="gridLayout_2">
-     <item row="0" column="3">
+     <item row="0" column="4">
       <widget class="QToolButton" name="mZoomToFeatureLeftButton">
        <property name="text">
         <string>Zoom to feature</string>
        </property>
       </widget>
      </item>
-     <item row="2" column="0" colspan="4">
-      <widget class="QListView" name="mFeaturesListViewLeft">
-       <property name="selectionMode">
-        <enum>QAbstractItemView::ExtendedSelection</enum>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="2">
+     <item row="0" column="3">
       <widget class="QToolButton" name="mSelectOnMapButton">
        <property name="text">
-        <string>Select on map</string>
+        <string>Map filter</string>
        </property>
       </widget>
      </item>
-     <item row="1" column="0" colspan="4">
+     <item row="1" column="0" colspan="5">
       <widget class="QgsFilterLineEdit" name="mQuickFilterLineEdit"/>
      </item>
      <item row="0" column="0">
@@ -114,12 +107,32 @@
        </property>
       </widget>
      </item>
-     <item row="0" column="1">
+     <item row="2" column="0" colspan="5">
+      <widget class="QListView" name="mFeaturesListViewLeft">
+       <property name="selectionMode">
+        <enum>QAbstractItemView::ExtendedSelection</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="2">
       <widget class="QToolButton" name="mQuickFilterButton">
        <property name="text">
         <string>Quick filter</string>
        </property>
       </widget>
+     </item>
+     <item row="0" column="1">
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
      </item>
     </layout>
    </item>
@@ -150,6 +163,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QgsFilterLineEdit</class>
+   <extends>QLineEdit</extends>
+   <header>qgsfilterlineedit.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections>
   <connection>
@@ -185,11 +205,4 @@
    </hints>
   </connection>
  </connections>
-  <customwidgets>
-  <customwidget>
-   <class>QgsFilterLineEdit</class>
-   <extends>QLineEdit</extends>
-   <header>qgsfilterlineedit.h</header>
-  </customwidget>
- </customwidgets>
 </ui>
