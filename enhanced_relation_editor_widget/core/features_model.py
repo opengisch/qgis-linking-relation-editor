@@ -20,6 +20,9 @@ from qgis.PyQt.QtCore import (
     QObject
 )
 from qgis.core import (
+    QgsExpression,
+    QgsExpressionContext,
+    QgsExpressionContextUtils,
     QgsFeature,
     QgsVectorLayer,
     QgsVectorLayerUtils
@@ -27,6 +30,9 @@ from qgis.core import (
 
 
 class FeaturesModel(QAbstractListModel):
+
+    class UserRole(IntEnum):
+        FeatureId = Qt.UserRole + 1
 
     class FeatureState(IntEnum):
         Linked = 1,
@@ -41,6 +47,7 @@ class FeaturesModel(QAbstractListModel):
                      layer: QgsVectorLayer):
             self._feature = feature
             self._featureState = featureState
+            self._layer = layer
             self._displayString = QgsVectorLayerUtils.getFeatureDisplayString(layer, feature)
 
         def feature(self):
@@ -69,17 +76,23 @@ class FeaturesModel(QAbstractListModel):
 
             return QIcon()
 
+        def tool_tip(self):
+            subContext = QgsExpressionContext()
+            subContext.appendScopes(QgsExpressionContextUtils.globalProjectLayerScopes(self._layer))
+            subContext.setFeature(self._feature)
+
+            return QgsExpression.replaceExpressionText(self._layer.mapTipTemplate(),
+                                                       subContext)
+
     def __init__(self,
                  features,
                  featureState,
                  layer: QgsVectorLayer,
-                 parentView,
                  parent: QObject = None):
         super().__init__(parent)
 
         self._layer = layer
         self._modelFeatures = []
-        self._parentView = parentView
         self.set_features(features,
                           featureState)
 
@@ -99,6 +112,12 @@ class FeaturesModel(QAbstractListModel):
 
         if role == Qt.DecorationRole:
             return self._modelFeatures[index.row()].display_icon()
+
+        if role == Qt.ToolTipRole:
+            return self._modelFeatures[index.row()].tool_tip()
+
+        if role == FeaturesModel.UserRole.FeatureId:
+            return self._modelFeatures[index.row()].feature_id()
 
         return None
 
@@ -136,17 +155,6 @@ class FeaturesModel(QAbstractListModel):
     def get_all_feature_items(self):
         return self._modelFeatures
 
-    def get_selected_features(self):
-        indexes = [modelIndex.row() for modelIndex in self._parentView.selectedIndexes()]
-        if not indexes:
-            return []
-
-        selectedFeatures = []
-        for index in indexes:
-            selectedFeatures.append(self._modelFeatures[index].featureId())
-
-        return selectedFeatures
-
     def add_features_model_items(self,
                                  feature_model_elements):
         self.beginInsertRows(QModelIndex(),
@@ -155,42 +163,27 @@ class FeaturesModel(QAbstractListModel):
         self._modelFeatures.extend(feature_model_elements)
         self.endInsertRows()
 
-    def take_selected_items(self):
-        indexes = [modelIndex.row() for modelIndex in self._parentView.selectedIndexes()]
-        if not indexes:
-            return []
-
-        indexes.sort()
-
-        # Clear selection to avoid widget accessing invalid indexes
-        self._parentView.selectionModel().clear()
-
-        self.beginResetModel()
-
-        featureModelElements = []
-
-        indexesMap = enumerate(indexes)
-        indexesMap = sorted(indexesMap, reverse=True)
-        print("indexesMap: {}".format(indexesMap))
-        for k, g in groupby(indexesMap, lambda x: x[0] - x[1]):
-            group = (map(itemgetter(1), g))
-            group = list(map(int, group))
-
-            featureModelElements.extend(self._modelFeatures[group[-1]:group[0] + 1])
-            del self._modelFeatures[group[-1]:group[0] + 1]
-
-            # self.endRemoveRows()
-
-        self.endResetModel()
-
-        return featureModelElements
-
     def take_all_items(self):
         self.beginResetModel()
         featureModelElements = self._modelFeatures
         self._modelFeatures = []
         self.endResetModel()
         return featureModelElements
+
+    def take_item(self,
+                  index: QModelIndex):
+
+        if not index.isValid():
+            return None
+
+        self.beginRemoveRows(QModelIndex(),
+                             index.row(),
+                             index.row()+1)
+        feature = self._modelFeatures[index.row()]
+        del self._modelFeatures[index.row()]
+        self.endRemoveRows()
+
+        return feature
 
     def contains(self,
                  feature_id: int):

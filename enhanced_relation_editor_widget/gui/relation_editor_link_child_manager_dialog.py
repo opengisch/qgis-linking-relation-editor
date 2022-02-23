@@ -9,6 +9,7 @@
 # -----------------------------------------------------------
 
 import os
+from enum import IntEnum
 from qgis.PyQt.QtCore import (
     Qt,
     QItemSelectionModel,
@@ -26,20 +27,24 @@ from qgis.core import (
     QgsFeatureRequest,
     QgsRelation,
     QgsVectorLayer,
+    QgsVectorLayerCache,
     QgsVectorLayerUtils
 )
 from qgis.gui import (
     QgsAttributeEditorContext,
+    QgsFilterLineEdit,
     QgsIdentifyMenu,
     QgsHighlight,
-    QgsMapToolIdentifyFeature,
     QgsMessageBar
 )
 from qgis.utils import iface
 from enhanced_relation_editor_widget.core.features_model import FeaturesModel
+from enhanced_relation_editor_widget.core.features_model_filter import FeaturesModelFilter
+from enhanced_relation_editor_widget.gui.map_tool_select_rectangle import MapToolSelectRectangle
 
 
-WidgetUi, _ = loadUiType(os.path.join(os.path.dirname(__file__), '../ui/relation_editor_link_child_manager_dialog.ui'))
+WidgetUi, _ = loadUiType(os.path.join(os.path.dirname(__file__),
+                                      '../ui/relation_editor_link_child_manager_dialog.ui'))
 
 
 class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
@@ -61,11 +66,12 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self._nmRelation = nmRelation
         self._editorContext = editorContext
 
-        self._mapToolIdentify = None
+        self._mapToolSelect = None
         if self._canvas():
-            self._mapToolIdentify = QgsMapToolIdentifyFeature(self._canvas(),
-                                                              self._layer)
-        self._highlight = None
+            self._mapToolSelect = MapToolSelectRectangle(self._canvas(),
+                                                         self._layer)
+
+        self._highlight = list()
 
         # Ui setup
         self.setupUi(self)
@@ -79,8 +85,12 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
                                       self.tr("Link all"))
         self._actionUnlinkAll = QAction(QgsApplication.getThemeIcon("/mActionDoubleArrowLeft.svg"),
                                         self.tr("Unlink all"))
-        self._actionSelectOnMap = QAction(QgsApplication.getThemeIcon("/mActionMapIdentification.svg"),
+        self._actionQuickFilter = QAction(QgsApplication.getThemeIcon("/mIndicatorFilter.svg"),
+                                          self.tr("Quick filter"))
+        self._actionQuickFilter.setCheckable(True)
+        self._actionMapFilter = QAction(QgsApplication.getThemeIcon("/mActionMapIdentification.svg"),
                                           self.tr("Select features on map"))
+        self._actionMapFilter.setCheckable(True)
         self._actionZoomToSelectedLeft = QAction(QgsApplication.getThemeIcon("/mActionZoomToSelected.svg"),
                                                  self.tr("Zoom To Feature(s)"))
         self._actionZoomToSelectedLeft.setToolTip(self.tr("Zoom to selected child feature(s)"))
@@ -93,7 +103,8 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self.mUnlinkSelectedButton.setDefaultAction(self._actionUnlinkSelected)
         self.mLinkAllButton.setDefaultAction(self._actionLinkAll)
         self.mUnlinkAllButton.setDefaultAction(self._actionUnlinkAll)
-        self.mSelectOnMapButton.setDefaultAction(self._actionSelectOnMap)
+        self.mQuickFilterButton.setDefaultAction(self._actionQuickFilter)
+        self.mSelectOnMapButton.setDefaultAction(self._actionMapFilter)
         self.mZoomToFeatureLeftButton.setDefaultAction(self._actionZoomToSelectedLeft)
         self.mZoomToFeatureRightButton.setDefaultAction(self._actionZoomToSelectedRight)
 
@@ -101,6 +112,7 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self.mUnlinkSelectedButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
         self.mLinkAllButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
         self.mUnlinkAllButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        self.mQuickFilterButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
         self.mSelectOnMapButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
         self.mZoomToFeatureLeftButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
         self.mZoomToFeatureRightButton.setToolButtonStyle(Qt.ToolButtonIconOnly)
@@ -132,16 +144,20 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self._featuresModelLeft = FeaturesModel(unlinkedFeatures,
                                                 FeaturesModel.FeatureState.Unlinked,
                                                 self._layer,
-                                                self.mFeaturesListViewLeft,
                                                 self)
-        self.mFeaturesListViewLeft.setModel(self._featuresModelLeft)
+
+        self._featuresModelFilterLeft = FeaturesModelFilter(self)
+        self._featuresModelFilterLeft.setSourceModel(self._featuresModelLeft)
+
+        self.mFeaturesListViewLeft.setModel(self._featuresModelFilterLeft)
 
         self._featuresModelRight = FeaturesModel(linkedFeatures,
                                                  FeaturesModel.FeatureState.Linked,
                                                  self._layer,
-                                                 self.mFeaturesListViewRight,
                                                  self)
         self.mFeaturesListViewRight.setModel(self._featuresModelRight)
+
+        self.mQuickFilterLineEdit.setVisible(False)
 
         # Signal slots
         self.accepted.connect(self._closing)
@@ -150,12 +166,15 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self._actionUnlinkSelected.triggered.connect(self._unlinkSelected)
         self._actionLinkAll.triggered.connect(self._linkAll)
         self._actionUnlinkAll.triggered.connect(self._unlinkAll)
-        self._actionSelectOnMap.triggered.connect(self._selectOnMap)
+        self._actionQuickFilter.triggered.connect(self._quick_filter_triggered)
+        self._actionMapFilter.triggered.connect(self._map_filter_triggered)
         self._actionZoomToSelectedLeft.triggered.connect(self._zoomToSelectedLeft)
         self._actionZoomToSelectedRight.triggered.connect(self._zoomToSelectedRight)
-        if self._mapToolIdentify:
-            self._mapToolIdentify.featureIdentified.connect(self._featureIdentified)
-            self._mapToolIdentify.deactivated.connect(self._mapToolDeactivated)
+        if self._mapToolSelect:
+            self._mapToolSelect.signal_selection_finished.connect(self._slot_map_tool_select_finished)
+            self._mapToolSelect.deactivated.connect(self._mapToolDeactivated)
+
+        self.mQuickFilterLineEdit.valueChanged.connect(self._quick_filter_value_changed)
 
     def get_feature_ids_to_unlink(self):
         featureIdsToUnlink = []
@@ -205,7 +224,10 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         return linkedFeatures.values(), unlinkedFeatures
 
     def _linkSelected(self):
-        featuresModelElements = self._featuresModelLeft.take_selected_items()
+        featuresModelElements = []
+        for modelIndex in self.mFeaturesListViewLeft.selectedIndexes():
+            featuresModelElements.append(self._featuresModelLeft.take_item(modelIndex))
+
         for featuresModelElement in featuresModelElements:
             if featuresModelElement.feature_state() == FeaturesModel.FeatureState.ToBeUnlinked:
                 featuresModelElement.set_feature_state(FeaturesModel.FeatureState.Linked)
@@ -215,7 +237,10 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self._featuresModelRight.add_features_model_items(featuresModelElements)
 
     def _unlinkSelected(self):
-        featuresModelElements = self._featuresModelRight.take_selected_items()
+        featuresModelElements = []
+        for modelIndex in self.mFeaturesListViewRight.selectedIndexes():
+            featuresModelElements.append(self._featuresModelRight.take_item(modelIndex))
+
         for featuresModelElement in featuresModelElements:
             if featuresModelElement.feature_state() == FeaturesModel.FeatureState.ToBeLinked:
                 featuresModelElement.set_feature_state(FeaturesModel.FeatureState.Unlinked)
@@ -225,7 +250,14 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self._featuresModelLeft.add_features_model_items(featuresModelElements)
 
     def _linkAll(self):
-        featuresModelElements = self._featuresModelLeft.take_all_items()
+        featuresModelElements = list()
+        if self._featuresModelFilterLeft.filter_active():
+            for row in reversed(range(self._featuresModelFilterLeft.rowCount())):
+                modelIndex = self._featuresModelFilterLeft.index(row, 0)
+                sourceModelIndex = self._featuresModelFilterLeft.mapToSource(modelIndex)
+                featuresModelElements.append(self._featuresModelLeft.take_item(sourceModelIndex))
+        else:
+            featuresModelElements = self._featuresModelLeft.take_all_items()
         for featuresModelElement in featuresModelElements:
             if featuresModelElement.feature_state() == FeaturesModel.FeatureState.ToBeUnlinked:
                 featuresModelElement.set_feature_state(FeaturesModel.FeatureState.Linked)
@@ -244,27 +276,48 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
 
         self._featuresModelLeft.add_features_model_items(featuresModelElements)
 
-    def _selectOnMap(self):
+    def _quick_filter_triggered(self,
+                                checked: bool):
+        self.mQuickFilterLineEdit.setVisible(checked)
+        if checked:
+            self.mQuickFilterLineEdit.setFocus()
+            self._featuresModelFilterLeft.set_quick_filter(self.mQuickFilterLineEdit.value())
+        else:
+            self._featuresModelFilterLeft.clear_quick_filter()
 
+    def _quick_filter_value_changed(self,
+                                    value: str):
+        self._featuresModelFilterLeft.set_quick_filter(value)
+
+    def _map_filter_triggered(self,
+                              checked: bool):
         if not self._canvas():
             return
 
-        self._mapToolIdentify.setLayer(self._layer)
-        self._setMapTool(self._mapToolIdentify)
+        if checked:
+            iface.actionSelect().trigger()
+            self._setMapTool(self._mapToolSelect)
 
-        title = self.tr("Relation {0} for {1}.").format(self._relation.name(),
-                                                        self._parentLayer.name())
-        msg = self.tr("Identify a feature of {0} to be associated. Press &lt;ESC&gt; to cancel.").format(self._layer.name())
-        self._messageBarItem = QgsMessageBar.createMessage(title,
-                                                           msg,
-                                                           self)
-        iface.messageBar().pushItem(self._messageBarItem)
+            title = self.tr("Relation {0} for {1}.").format(self._relation.name(),
+                                                            self._parentLayer.name())
+            msg = self.tr("Identify a feature of {0} to be associated. Press &lt;ESC&gt; to cancel.").format(self._layer.name())
+            self._messageBarItem = QgsMessageBar.createMessage(title,
+                                                               msg,
+                                                               self)
+            iface.messageBar().pushItem(self._messageBarItem)
+
+        else:
+            self._featuresModelFilterLeft.clear_map_filter()
 
     def _zoomToSelectedLeft(self):
         if not self._canvas():
             return
 
-        selectedFeatureIds = self._featuresModelLeft.get_selected_features()
+        selectedFeatureIds = []
+        for modelIndex in self.mFeaturesListViewLeft.selectedIndexes():
+            selectedFeatureIds.append(self._featuresModelFilterLeft.data(modelIndex,
+                                                                         FeaturesModel.UserRole.FeatureId))
+
         if len(selectedFeatureIds) == 0:
             return
 
@@ -275,44 +328,60 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         if not self._canvas():
             return
 
-        selectedFeatureIds = self._featuresModelRight.get_selected_features()
+        selectedFeatureIds = []
+        for modelIndex in self.mFeaturesListViewRight.selectedIndexes():
+            selectedFeatureIds.append(self._featuresModelRight.data(modelIndex,
+                                                                    FeaturesModel.UserRole.FeatureId))
+
         if len(selectedFeatureIds) == 0:
             return
 
         self._canvas().zoomToFeatureIds(self._layer,
                                         selectedFeatureIds)
 
-    def _featureIdentified(self,
-                           feature: QgsFeature):
+    def _slot_map_tool_select_finished(self,
+                                       features: list):
 
-        # select this feature
-        if feature.isValid():
-            if not self._featuresModelRight.contains(feature.id()):
+        self.mFeaturesListViewLeft.selectionModel().reset()
 
-                self.mFeaturesListViewLeft.selectionModel().clear()
+        already_linked_features = list()
+        map_filter_features = list()
+        for feature in features:
+            # select this feature
+            if not feature.isValid():
+                continue
 
-                index = self._featuresModelLeft.get_feature_index(feature.id())
-                self.mFeaturesListViewLeft.selectionModel().select(index, QItemSelectionModel.Select)
+            if self._featuresModelRight.contains(feature.id()):
+                already_linked_features.append(str(feature.id()))
+                continue
 
-                self._highlightFeature(feature)
-            else:
-                QMessageBox.warning(self._canvas().window(),
-                                    self.tr("Feature already linked"),
-                                    self.tr("Feature '{0}' already linked").format(feature.id()))
+            map_filter_features.append(feature.id())
+            self._highlightFeature(feature)
 
+        if already_linked_features:
+            QMessageBox.warning(self._canvas().window(),
+                                self.tr("Feature already linked"),
+                                self.tr("Some feature(s) are already linked: '{0}'").format(', '.join(already_linked_features)))
+
+        if map_filter_features:
+            self._featuresModelFilterLeft.set_map_filter(map_filter_features)
+        else:
+            self._actionMapFilter.setChecked(False)
+
+        #  self.show()
         self._unsetMapTool()
 
     def _setMapTool(self,
                     mapTool):
+        #  self.hide() TODO Is it possible to hide the parent feature form too?
         self._canvas().setMapTool(mapTool)
-
         self._canvas().window().raise_()
         self._canvas().activateWindow()
         self._canvas().setFocus()
 
     def _unsetMapTool(self):
         # this will call mapToolDeactivated
-        self._canvas().unsetMapTool(self._mapToolIdentify)
+        self._canvas().unsetMapTool(self._mapToolSelect)
 
     def _mapToolDeactivated(self):
 
@@ -333,13 +402,13 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         if not feature.hasGeometry():
             return
 
-        # highlight
-        self._highlight = QgsHighlight(self._canvas(),
-                                       feature,
-                                       self._layer)
-        QgsIdentifyMenu.styleHighlight(self._highlight)
-        self._highlight.show()
-
+        # Highlight selected features shortly
+        highlight = QgsHighlight(self._canvas(),
+                                 feature,
+                                 self._layer)
+        QgsIdentifyMenu.styleHighlight(highlight)
+        highlight.show()
+        self._highlight.append(highlight)
         QTimer.singleShot(3000,
                           self._deleteHighlight)
 
@@ -347,8 +416,8 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         if not self._highlight:
             return
 
-        self._highlight.hide()
-        self._highlight = None
+        highlight = self._highlight[0].hide()
+        del self._highlight[0]
 
     def _canvas(self):
         if not self._editorContext:
