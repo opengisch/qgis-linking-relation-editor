@@ -40,6 +40,7 @@ from qgis.gui import (
 from qgis.utils import iface
 from enhanced_relation_editor_widget.core.features_model import FeaturesModel
 from enhanced_relation_editor_widget.core.features_model_filter import FeaturesModelFilter
+from enhanced_relation_editor_widget.gui.feature_filter_widget import FeatureFilterWidget
 from enhanced_relation_editor_widget.gui.map_tool_select_rectangle import MapToolSelectRectangle
 
 
@@ -89,7 +90,7 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
                                           self.tr("Quick filter"))
         self._actionQuickFilter.setCheckable(True)
         self._actionMapFilter = QAction(QgsApplication.getThemeIcon("/mActionMapIdentification.svg"),
-                                          self.tr("Select features on map"))
+                                        self.tr("Select features on map"))
         self._actionMapFilter.setCheckable(True)
         self._actionZoomToSelectedLeft = QAction(QgsApplication.getThemeIcon("/mActionZoomToSelected.svg"),
                                                  self.tr("Zoom To Feature(s)"))
@@ -159,6 +160,16 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
 
         self.mQuickFilterLineEdit.setVisible(False)
 
+        self._feature_filter_widget = FeatureFilterWidget(self)
+        self.mFooterHBoxLayout.insertWidget(0,
+                                            self._feature_filter_widget)
+        self._feature_filter_widget.init(self._layer,
+                                         self._editorContext,
+                                         None,
+                                         iface.messageBar(),
+                                         QgsMessageBar.defaultMessageTimeout())
+        self._feature_filter_widget.filterShowAll()
+
         # Signal slots
         self.accepted.connect(self._closing)
         self.rejected.connect(self._closing)
@@ -171,7 +182,7 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self._actionZoomToSelectedLeft.triggered.connect(self._zoomToSelectedLeft)
         self._actionZoomToSelectedRight.triggered.connect(self._zoomToSelectedRight)
         if self._mapToolSelect:
-            self._mapToolSelect.signal_selection_finished.connect(self._slot_map_tool_select_finished)
+            self._mapToolSelect.signal_selection_finished.connect(self._map_tool_select_finished)
             self._mapToolSelect.deactivated.connect(self._mapToolDeactivated)
 
         self.mQuickFilterLineEdit.valueChanged.connect(self._quick_filter_value_changed)
@@ -339,7 +350,7 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self._canvas().zoomToFeatureIds(self._layer,
                                         selectedFeatureIds)
 
-    def _slot_map_tool_select_finished(self,
+    def _map_tool_select_finished(self,
                                        features: list):
 
         self.mFeaturesListViewLeft.selectionModel().reset()

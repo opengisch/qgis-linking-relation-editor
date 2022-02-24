@@ -33,7 +33,7 @@ class MapToolSelectRectangle(QgsMapToolEmitPoint):
         self.rubberBand.setWidth(1)
         self.reset()
 
-        self.deactivated.connect(self._slot_deactivated)
+        self.deactivated.connect(self._deactivated)
 
     def reset(self):
         self.startPoint = self.endPoint = None
@@ -123,7 +123,7 @@ class MapToolSelectRectangle(QgsMapToolEmitPoint):
         return QgsRectangle(self.startPoint,
                             self.endPoint)
 
-    def _slot_deactivated(self):
+    def _deactivated(self):
         self.rubberBand.reset(QgsWkbTypes.PolygonGeometry)
 
 
