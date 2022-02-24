@@ -16,6 +16,7 @@ from qgis.PyQt.uic import loadUiType
 from qgis.core import (
     QgsApplication,
     QgsDistanceArea,
+    QgsExpression,
     QgsExpressionContext,
     QgsExpressionContextUtils,
     QgsFeature,
@@ -152,7 +153,7 @@ class FeatureFilterWidget(QWidget,
         self._features_model_filter.set_legacy_filter(FeaturesModelFilter.LegacyFilter.ShowEdited)
 
     def filterQueryAccepted(self):
-        if ((self.mFilterQuery.isVisible() and self.mFilterQuery.text().isEmpty()) or
+        if ((self.mFilterQuery.isVisible() and len(self.mFilterQuery.text()) == 0) or
             (self.mCurrentSearchWidgetWrapper and self.mCurrentSearchWidgetWrapper.widget().isVisible()
              and self.mCurrentSearchWidgetWrapper.expression().isEmpty())):
             self.filterShowAll()
@@ -168,7 +169,9 @@ class FeatureFilterWidget(QWidget,
         elif self.mCurrentSearchWidgetWrapper:
             queryString = self.mCurrentSearchWidgetWrapper.expression()
 
-        self.setFilterExpression(queryString)
+        self.setFilterExpression(queryString,
+                                 QgsAttributeForm.ReplaceFilter,
+                                 False)
 
     def columnBoxInit(self):
         for action in self.mFilterColumnsMenu.actions()[:]:
@@ -264,8 +267,7 @@ class FeatureFilterWidget(QWidget,
                                                                                             self.mLayer,
                                                                                             fldIdx,
                                                                                             setup.config(),
-                                                                                            self.mFilterContainer,
-                                                                                            self.mEditorContext)
+                                                                                            self.mFilterContainer)
         if self.mCurrentSearchWidgetWrapper.applyDirectly():
             self.mCurrentSearchWidgetWrapper.expressionChanged.connect(self.filterQueryChanged)
             self.mApplyFilterButton.setVisible(False)
@@ -285,7 +287,7 @@ class FeatureFilterWidget(QWidget,
         dlg = QgsExpressionBuilderDialog(self.mLayer,
                                          self.mFilterQuery.text(),
                                          self,
-                                         QStringLiteral("generic"),
+                                         "generic",
                                          context)
         dlg.setWindowTitle(self.tr("Expression Based Filter"))
 
@@ -349,20 +351,20 @@ class FeatureFilterWidget(QWidget,
         currentStoredExpression = self.mLayer.storedExpressionManager().findStoredExpressionByExpression(self.mFilterQuery.value())
 
         # Set checked when it's an existing stored expression
-        self.mActionHandleStoreFilterExpression.setChecked(not currentStoredExpression.id.isNull())
+        self.mActionHandleStoreFilterExpression.setChecked(len(currentStoredExpression.id) > 0)
 
         self.mActionHandleStoreFilterExpression.setData(currentStoredExpression.id)
         self.mActionEditStoredFilterExpression.setData(currentStoredExpression.id)
 
         # Update bookmark button
-        storeExpressionButtonInit()
+        self.storeExpressionButtonInit()
 
     def setFilterExpression(self,
                             filterString: str,
                             type: QgsAttributeForm.FilterType,
                             alwaysShowFilter: bool):
         filter = str()
-        if not self.mFilterQuery.text().isEmpty() and not filterString.isEmpty():
+        if self.mFilterQuery.text() and filterString:
             if type == QgsAttributeForm.ReplaceFilter:
                 filter = filterString
 
@@ -372,7 +374,7 @@ class FeatureFilterWidget(QWidget,
             elif type == QgsAttributeForm.FilterOr:
                 filter = "({0}) OR ({1})".format(self.mFilterQuery.text(), filterString)
 
-        elif not filterString.isEmpty():
+        elif filterString:
             filter = filterString
 
         else:

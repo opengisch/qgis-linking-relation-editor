@@ -8,8 +8,11 @@ from qgis.PyQt.QtCore import (
 )
 from qgis.PyQt.QtWidgets import QApplication
 from qgis.core import (
+    QgsDistanceArea,
     QgsExpression,
     QgsExpressionContext,
+    QgsFeatureRequest,
+    QgsProject,
     QgsVectorLayer
 )
 from enhanced_relation_editor_widget.core.features_model import FeaturesModel
@@ -26,10 +29,12 @@ class FeaturesModelFilter(QSortFilterProxyModel):
 
     def __init__(self,
                  layer: QgsVectorLayer,
+                 request: QgsFeatureRequest,
                  parent: QObject = None):
         super().__init__(parent)
 
         self._layer = layer
+        self._request = request
         self._quick_filter = str()
         self._map_filter = list()
         self._legacy_filter = FeaturesModelFilter.LegacyFilter.ShowAll
@@ -106,13 +111,16 @@ class FeaturesModelFilter(QSortFilterProxyModel):
 
         elif self._legacy_filter == FeaturesModelFilter.LegacyFilter.ShowEdited:
             editBuffer = self._layer.editBuffer()
+            print(1)
             if not editBuffer:
                 return False
 
-            if not editBuffer.isFeatureAdded(rowFeatureId) or \
-               not editBuffer.isFeatureAttributesChanged(rowFeatureId) or \
-               not editBuffer.isFeatureGeometryChanged(rowFeatureId):
+            print(2)
+            if not (editBuffer.isFeatureAdded(rowFeatureId) or
+                    editBuffer.isFeatureAttributesChanged(rowFeatureId) or
+                    editBuffer.isFeatureGeometryChanged(rowFeatureId)):
                 return False
+            print(3)
 
         elif self._legacy_filter == FeaturesModelFilter.LegacyFilter.ShowFilteredList:
             if rowFeatureId not in self._legacy_filter_filtered_features:
@@ -139,9 +147,8 @@ class FeaturesModelFilter(QSortFilterProxyModel):
         if not self._legacy_filter_expression.isValid():
             return
 
-        distanceArea = QgsDistanceArea
-
-        distanceArea.setSourceCrs(mTableModel.layer().crs(), QgsProject.instance().transformContext())
+        distanceArea = QgsDistanceArea()
+        distanceArea.setSourceCrs(self._layer.crs(), QgsProject.instance().transformContext())
         distanceArea.setEllipsoid(QgsProject.instance().ellipsoid())
 
         fetchGeom = self._legacy_filter_expression.needsGeometry()
@@ -151,8 +158,8 @@ class FeaturesModelFilter(QSortFilterProxyModel):
         self._legacy_filter_expression.setGeomCalculator(distanceArea)
         self._legacy_filter_expression.setDistanceUnits(QgsProject.instance().distanceUnits())
         self._legacy_filter_expression.setAreaUnits(QgsProject.instance().areaUnits())
-        request = mTableModel.request()
-        request.setSubsetOfAttributes(self._legacy_filter_expression.referencedColumns(), mTableModel.layer().fields())
+        request = self._request
+        request.setSubsetOfAttributes(self._legacy_filter_expression.referencedColumns(), self._layer.fields())
 
         if fetchGeom:
             # force geometry extraction if the filter requests it
@@ -163,7 +170,7 @@ class FeaturesModelFilter(QSortFilterProxyModel):
         # Record the first evaluation error
         error = str()
 
-        for f in mTableModel.layer().getFeatures(request):
+        for f in self._layer.getFeatures(request):
             self._legacy_filter_expression_context.setFeature(f)
             if self._legacy_filter_expression.evaluate(self._legacy_filter_expression_context).toInt() != 0:
                 self._legacy_filter_filtered_features.append() << f.id()

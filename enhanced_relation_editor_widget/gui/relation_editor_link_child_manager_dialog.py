@@ -140,7 +140,7 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
 
         self.mLayerNameLabel.setText(self._layer.name())
 
-        linkedFeatures, unlinkedFeatures = self._getAllFeatures()
+        linkedFeatures, unlinkedFeatures, request = self._getAllFeatures()
 
         self._featuresModelLeft = FeaturesModel(unlinkedFeatures,
                                                 FeaturesModel.FeatureState.Unlinked,
@@ -148,6 +148,7 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
                                                 self)
 
         self._featuresModelFilterLeft = FeaturesModelFilter(self._layer,
+                                                            request,
                                                             self)
         self._featuresModelFilterLeft.setSourceModel(self._featuresModelLeft)
 
@@ -207,7 +208,7 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
     def _getAllFeatures(self):
 
         if not self._relation.isValid() or not self._parentFeature.isValid():
-            return [], []
+            return [], [], QgsFeatureRequest()
 
         linkedFeatures = dict()
         layer = self._relation.referencingLayer()
@@ -222,18 +223,18 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
                 filterExpression = referencedFeatureRequest.filterExpression()
                 filters.append("(" + filterExpression.expression() + ")")
 
-            nmRequest = QgsFeatureRequest()
-            nmRequest.setFilterExpression(" OR ".join(filters))
+            request = QgsFeatureRequest()
+            request.setFilterExpression(" OR ".join(filters))
 
             linkedFeatures = dict()
             layer = self._nmRelation.referencedLayer()
-            for documentFeature in layer.getFeatures(nmRequest):
+            for documentFeature in layer.getFeatures(request):
                 linkedFeatures[documentFeature.id()] = documentFeature
 
         unlinkedFeatures = list(layer.getFeatures())
         unlinkedFeatures = [unlinkedFeature for unlinkedFeature in unlinkedFeatures if unlinkedFeature.id() not in linkedFeatures]
 
-        return linkedFeatures.values(), unlinkedFeatures
+        return linkedFeatures.values(), unlinkedFeatures, request
 
     def _linkSelected(self):
         featuresModelElements = []
