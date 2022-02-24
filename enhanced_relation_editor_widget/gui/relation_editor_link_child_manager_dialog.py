@@ -147,7 +147,8 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
                                                 self._layer,
                                                 self)
 
-        self._featuresModelFilterLeft = FeaturesModelFilter(self)
+        self._featuresModelFilterLeft = FeaturesModelFilter(self._layer,
+                                                            self)
         self._featuresModelFilterLeft.setSourceModel(self._featuresModelLeft)
 
         self.mFeaturesListViewLeft.setModel(self._featuresModelFilterLeft)
@@ -165,7 +166,7 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
                                             self._feature_filter_widget)
         self._feature_filter_widget.init(self._layer,
                                          self._editorContext,
-                                         None,
+                                         self._featuresModelFilterLeft,
                                          iface.messageBar(),
                                          QgsMessageBar.defaultMessageTimeout())
         self._feature_filter_widget.filterShowAll()
