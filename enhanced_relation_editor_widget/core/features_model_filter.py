@@ -43,7 +43,8 @@ class FeaturesModelFilter(QSortFilterProxyModel):
         self._legacy_filter_expression_context = QgsExpressionContext()
         self._legacy_filter_filtered_features = list()
 
-        self._canvas.extentsChanged.connect(self._extent_changed)
+        if self._canvas:
+            self._canvas.extentsChanged.connect(self._extent_changed)
 
     def set_quick_filter(self,
                          filter: str):
@@ -179,6 +180,9 @@ class FeaturesModelFilter(QSortFilterProxyModel):
     def _prepare_filtered_by_visible_features(self):
 
         self._legacy_filter_filtered_features = list()
+
+        if not self._canvas:
+            return
 
         rectangle = self._canvas.mapSettings().mapToLayerCoordinates(self._layer,
                                                                      self._canvas.extent())
