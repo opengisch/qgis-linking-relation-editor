@@ -165,12 +165,13 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
         self._feature_filter_widget = FeatureFilterWidget(self)
         self.mFooterHBoxLayout.insertWidget(0,
                                             self._feature_filter_widget)
-        self._feature_filter_widget.init(self._layer,
-                                         self._editorContext,
-                                         self._featuresModelFilterLeft,
-                                         iface.messageBar(),
-                                         QgsMessageBar.defaultMessageTimeout())
-        self._feature_filter_widget.filterShowAll()
+        if iface:  # TODO how to use iface in tests?
+            self._feature_filter_widget.init(self._layer,
+                                             self._editorContext,
+                                             self._featuresModelFilterLeft,
+                                             iface.messageBar(),
+                                             QgsMessageBar.defaultMessageTimeout())
+            self._feature_filter_widget.filterShowAll()
 
         # Signal slots
         self.accepted.connect(self._closing)
