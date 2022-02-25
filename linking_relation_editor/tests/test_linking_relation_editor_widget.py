@@ -11,12 +11,12 @@ from qgis.testing import (
     unittest,
     start_app
 )
-from enhanced_relation_editor_widget.gui.enhanced_relation_editor_widget_factory import EnhancedRelationEditorWidget
+from linking_relation_editor.gui.linking_relation_editor_widget_factory import LinkingRelationEditorWidget
 
 start_app()
 
 
-class TestEnhancedRelationEditorWidgetFactory(unittest.TestCase):
+class TestLinkingRelationEditorWidgetFactory(unittest.TestCase):
 
     def setUp(self):
         # create layer
@@ -127,8 +127,8 @@ class TestEnhancedRelationEditorWidgetFactory(unittest.TestCase):
     def test_InstantiateRelation1N(self):
         # Init a relation editor widget
         parentWidget = QWidget()
-        relationEditorWidget = EnhancedRelationEditorWidget({},
-                                                            parentWidget)
+        relationEditorWidget = LinkingRelationEditorWidget({},
+                                                           parentWidget)
         relationEditorWidget.setRelations(self.mRelation,
                                           QgsRelation())
 
@@ -143,8 +143,8 @@ class TestEnhancedRelationEditorWidgetFactory(unittest.TestCase):
 
         # Init a relation editor widget
         parentWidget = QWidget()
-        relationEditorWidget = EnhancedRelationEditorWidget({},
-                                                            parentWidget)
+        relationEditorWidget = LinkingRelationEditorWidget({},
+                                                           parentWidget)
         relationEditorWidget.setRelations(self.mRelation,
                                           QgsRelation())
 
@@ -160,8 +160,8 @@ class TestEnhancedRelationEditorWidgetFactory(unittest.TestCase):
     def test_InstantiateRelationNM(self):
         # Init a relation editor widget
         parentWidget = QWidget()
-        relationEditorWidget = EnhancedRelationEditorWidget({},
-                                                            parentWidget)
+        relationEditorWidget = LinkingRelationEditorWidget({},
+                                                           parentWidget)
         relationEditorWidget.setRelations(self.mRelation1N,
                                           self.mRelationNM)
 
@@ -175,8 +175,8 @@ class TestEnhancedRelationEditorWidgetFactory(unittest.TestCase):
     def test_InstantiateRelationNM_linkFeatures(self):
         # Init a relation editor widget
         parentWidget = QWidget()
-        relationEditorWidget = EnhancedRelationEditorWidget({},
-                                                            parentWidget)
+        relationEditorWidget = LinkingRelationEditorWidget({},
+                                                           parentWidget)
         relationEditorWidget.setRelations(self.mRelation1N,
                                           self.mRelationNM)
 

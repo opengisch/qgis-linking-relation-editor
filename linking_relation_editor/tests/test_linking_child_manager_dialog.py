@@ -11,12 +11,12 @@ from qgis.testing import (
     unittest,
     start_app
 )
-from enhanced_relation_editor_widget.gui.relation_editor_link_child_manager_dialog import RelationEditorLinkChildManagerDialog
+from linking_relation_editor.gui.linking_child_manager_dialog import LinkingChildManagerDialog
 
 start_app()
 
 
-class TestRelationEditorLinkChildManagerDialog(unittest.TestCase):
+class TestLinkingChildManagerDialog(unittest.TestCase):
 
     def setUp(self):
         # create layer
@@ -136,12 +136,12 @@ class TestRelationEditorLinkChildManagerDialog(unittest.TestCase):
                                      'memory')
         self.assertTrue(parentLayer.isValid())
 
-        dialog = RelationEditorLinkChildManagerDialog(childLayer,
-                                                      parentLayer,
-                                                      QgsFeature(),
-                                                      QgsRelation(),
-                                                      QgsRelation(),
-                                                      None)
+        dialog = LinkingChildManagerDialog(childLayer,
+                                           parentLayer,
+                                           QgsFeature(),
+                                           QgsRelation(),
+                                           QgsRelation(),
+                                           None)
 
         self.assertEqual(dialog.mLayerNameLabel.text(), childLayer.name())
 
@@ -154,12 +154,12 @@ class TestRelationEditorLinkChildManagerDialog(unittest.TestCase):
 
         self.assertTrue(parentFeature.isValid())
 
-        dialog = RelationEditorLinkChildManagerDialog(self.mLayer2,
-                                                      self.mLayer1,
-                                                      parentFeature,
-                                                      self.mRelation,
-                                                      QgsRelation(),
-                                                      None)
+        dialog = LinkingChildManagerDialog(self.mLayer2,
+                                           self.mLayer1,
+                                           parentFeature,
+                                           self.mRelation,
+                                           QgsRelation(),
+                                           None)
 
     def test_InstantiateRelationNM(self):
 
@@ -170,11 +170,11 @@ class TestRelationEditorLinkChildManagerDialog(unittest.TestCase):
 
         self.assertTrue(parentFeature.isValid())
 
-        dialog = RelationEditorLinkChildManagerDialog(self.mLayer2,
-                                                      self.mLayer1,
-                                                      parentFeature,
-                                                      self.mRelation1N,
-                                                      self.mRelationNM,
-                                                      None)
+        dialog = LinkingChildManagerDialog(self.mLayer2,
+                                           self.mLayer1,
+                                           parentFeature,
+                                           self.mRelation1N,
+                                           self.mRelationNM,
+                                           None)
 
 

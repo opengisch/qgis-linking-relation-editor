@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # -----------------------------------------------------------
 #
-# QGIS Enhanced Relation Editor Widget Plugin
+# QGIS Linking Relation Editor
 # Copyright (C) 2022 Damiano Lombardi
 #
 # licensed under the terms of GNU GPL 2
@@ -38,17 +38,17 @@ from qgis.gui import (
     QgsMessageBar
 )
 from qgis.utils import iface
-from enhanced_relation_editor_widget.core.features_model import FeaturesModel
-from enhanced_relation_editor_widget.core.features_model_filter import FeaturesModelFilter
-from enhanced_relation_editor_widget.gui.feature_filter_widget import FeatureFilterWidget
-from enhanced_relation_editor_widget.gui.map_tool_select_rectangle import MapToolSelectRectangle
+from linking_relation_editor.core.features_model import FeaturesModel
+from linking_relation_editor.core.features_model_filter import FeaturesModelFilter
+from linking_relation_editor.gui.feature_filter_widget import FeatureFilterWidget
+from linking_relation_editor.gui.map_tool_select_rectangle import MapToolSelectRectangle
 
 
 WidgetUi, _ = loadUiType(os.path.join(os.path.dirname(__file__),
-                                      '../ui/relation_editor_link_child_manager_dialog.ui'))
+                                      '../ui/linking_child_manager_dialog.ui'))
 
 
-class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
+class LinkingChildManagerDialog(QDialog, WidgetUi):
 
     def __init__(self,
                  layer: QgsVectorLayer,

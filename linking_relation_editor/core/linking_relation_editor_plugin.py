@@ -11,14 +11,14 @@
 import os
 from qgis.PyQt.QtCore import QCoreApplication, QTranslator, QObject, QLocale, QSettings
 from qgis.gui import QgisInterface, QgsGui
-from enhanced_relation_editor_widget.gui.enhanced_relation_editor_widget_factory import EnhancedRelationEditorWidgetFactory, WIDGET_TYPE
+from linking_relation_editor.gui.linking_relation_editor_widget_factory import LinkingRelationEditorWidgetFactory, WIDGET_TYPE
 
 DEBUG = True
 
 
-class EnhancedRelationEditorWidgetPlugin(QObject):
+class LinkingRelationEditorPlugin(QObject):
 
-    plugin_name = "&Enhanced Relation Editor Widget"
+    plugin_name = "&Linking Relation Editor"
 
     def __init__(self, iface: QgisInterface):
         QObject.__init__(self)
@@ -32,7 +32,7 @@ class EnhancedRelationEditorWidgetPlugin(QObject):
         QCoreApplication.installTranslator(self.translator)
 
     def initGui(self):
-        QgsGui.relationWidgetRegistry().addRelationWidget(EnhancedRelationEditorWidgetFactory())
+        QgsGui.relationWidgetRegistry().addRelationWidget(LinkingRelationEditorWidgetFactory())
 
     def unload(self):
         QgsGui.relationWidgetRegistry().removeRelationWidget(WIDGET_TYPE)
