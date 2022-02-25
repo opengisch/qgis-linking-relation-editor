@@ -15,6 +15,7 @@ from qgis.core import (
     QgsProject,
     QgsVectorLayer
 )
+from qgis.gui import QgsMapCanvas
 from enhanced_relation_editor_widget.core.features_model import FeaturesModel
 
 
@@ -29,18 +30,20 @@ class FeaturesModelFilter(QSortFilterProxyModel):
 
     def __init__(self,
                  layer: QgsVectorLayer,
-                 request: QgsFeatureRequest,
+                 canvas: QgsMapCanvas,
                  parent: QObject = None):
         super().__init__(parent)
 
         self._layer = layer
-        self._request = request
+        self._canvas = canvas
         self._quick_filter = str()
         self._map_filter = list()
         self._legacy_filter = FeaturesModelFilter.LegacyFilter.ShowAll
         self._legacy_filter_expression = QgsExpression()
         self._legacy_filter_expression_context = QgsExpressionContext()
         self._legacy_filter_filtered_features = list()
+
+        self._canvas.extentsChanged.connect(self._extent_changed)
 
     def set_quick_filter(self,
                          filter: str):
@@ -72,6 +75,9 @@ class FeaturesModelFilter(QSortFilterProxyModel):
 
         if self._legacy_filter == FeaturesModelFilter.LegacyFilter.ShowFilteredList:
             self._prepare_filtered_features()
+
+        elif self._legacy_filter == FeaturesModelFilter.LegacyFilter.ShowVisible:
+            self._prepare_filtered_by_visible_features()
 
         self.invalidateFilter()
 
@@ -111,16 +117,13 @@ class FeaturesModelFilter(QSortFilterProxyModel):
 
         elif self._legacy_filter == FeaturesModelFilter.LegacyFilter.ShowEdited:
             editBuffer = self._layer.editBuffer()
-            print(1)
             if not editBuffer:
                 return False
 
-            print(2)
             if not (editBuffer.isFeatureAdded(rowFeatureId) or
                     editBuffer.isFeatureAttributesChanged(rowFeatureId) or
                     editBuffer.isFeatureGeometryChanged(rowFeatureId)):
                 return False
-            print(3)
 
         elif self._legacy_filter == FeaturesModelFilter.LegacyFilter.ShowFilteredList:
             if rowFeatureId not in self._legacy_filter_filtered_features:
@@ -158,22 +161,14 @@ class FeaturesModelFilter(QSortFilterProxyModel):
         self._legacy_filter_expression.setGeomCalculator(distanceArea)
         self._legacy_filter_expression.setDistanceUnits(QgsProject.instance().distanceUnits())
         self._legacy_filter_expression.setAreaUnits(QgsProject.instance().areaUnits())
-        request = self._request
-        request.setSubsetOfAttributes(self._legacy_filter_expression.referencedColumns(), self._layer.fields())
-
-        if fetchGeom:
-            # force geometry extraction if the filter requests it
-            request.setFlags(request.flags() & ~QgsFeatureRequest.NoGeometry)
-        else:
-            request.setFlags(QgsFeatureRequest.NoGeometry)
 
         # Record the first evaluation error
         error = str()
 
-        for f in self._layer.getFeatures(request):
+        for f in self._layer.getFeatures():
             self._legacy_filter_expression_context.setFeature(f)
-            if self._legacy_filter_expression.evaluate(self._legacy_filter_expression_context).toInt() != 0:
-                self._legacy_filter_filtered_features.append() << f.id()
+            if self._legacy_filter_expression.evaluate(self._legacy_filter_expression_context) != 0:
+                self._legacy_filter_filtered_features.append(f.id())
 
             # check if there were errors during evaluating
             if self._legacy_filter_expression.hasEvalError() and error.isEmpty():
@@ -181,5 +176,22 @@ class FeaturesModelFilter(QSortFilterProxyModel):
 
         QApplication.restoreOverrideCursor()
 
+    def _prepare_filtered_by_visible_features(self):
 
+        self._legacy_filter_filtered_features = list()
+
+        rectangle = self._canvas.mapSettings().mapToLayerCoordinates(self._layer,
+                                                                     self._canvas.extent())
+
+        request = QgsFeatureRequest()
+        request.setFilterRect(rectangle)
+
+        for feature in self._layer.getFeatures(request):
+            self._legacy_filter_filtered_features.append(feature.id())
+
+    def _extent_changed(self):
+        if self._legacy_filter == FeaturesModelFilter.LegacyFilter.ShowVisible:
+            self._prepare_filtered_by_visible_features()
+
+        self.invalidateFilter()
 

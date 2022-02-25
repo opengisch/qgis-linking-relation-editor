@@ -148,7 +148,7 @@ class RelationEditorLinkChildManagerDialog(QDialog, WidgetUi):
                                                 self)
 
         self._featuresModelFilterLeft = FeaturesModelFilter(self._layer,
-                                                            request,
+                                                            self._canvas(),
                                                             self)
         self._featuresModelFilterLeft.setSourceModel(self._featuresModelLeft)
 

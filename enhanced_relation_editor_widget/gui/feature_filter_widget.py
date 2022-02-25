@@ -134,7 +134,7 @@ class FeatureFilterWidget(QWidget,
 
     def filterVisible(self):
         if not self.mLayer.isSpatial():
-            filterShowAll()
+            self.filterShowAll()
             return
 
         self.mFilterButton.setDefaultAction(self.mActionVisibleFilter)
@@ -378,7 +378,7 @@ class FeatureFilterWidget(QWidget,
             filter = filterString
 
         else:
-            filterShowAll()
+            self.filterShowAll()
             return
 
         self.mFilterQuery.setText(filter)
