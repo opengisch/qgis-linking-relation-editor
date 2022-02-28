@@ -317,7 +317,7 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
 
             title = self.tr("Relation {0} for {1}.").format(self._relation.name(),
                                                             self._parentLayer.name())
-            msg = self.tr("Identify a feature of {0} to be associated. Press &lt;ESC&gt; to cancel.").format(self._layer.name())
+            msg = self.tr("Select features of {0} to be considered. Press &lt;ESC&gt; to cancel.").format(self._layer.name())
             self._messageBarItem = QgsMessageBar.createMessage(title,
                                                                msg,
                                                                self)
@@ -369,7 +369,7 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
                 continue
 
             if self._featuresModelRight.contains(feature.id()):
-                already_linked_features.append(str(feature.id()))
+                already_linked_features.append(QgsVectorLayerUtils.getFeatureDisplayString(self._layer, feature))
                 continue
 
             map_filter_features.append(feature.id())
@@ -378,7 +378,7 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
         if already_linked_features:
             QMessageBox.warning(self._canvas().window(),
                                 self.tr("Feature already linked"),
-                                self.tr("Some feature(s) are already linked: '{0}'").format(', '.join(already_linked_features)))
+                                self.tr("Some feature(s) are already linked: '{0}'").format("', '".join(already_linked_features)))
 
         if map_filter_features:
             self._featuresModelFilterLeft.set_map_filter(map_filter_features)
