@@ -45,7 +45,8 @@ from enhanced_relation_editor_widget.core.plugin_helper import PluginHelper
 from enhanced_relation_editor_widget.gui.filtered_selection_manager import FilteredSelectionManager
 from enhanced_relation_editor_widget.gui.relation_editor_link_child_manager_dialog import RelationEditorLinkChildManagerDialog
 
-WidgetUi, _ = loadUiType(os.path.join(os.path.dirname(__file__), '../ui/enhanced_relation_editor_widget.ui'))
+WidgetUi, _ = loadUiType(os.path.join(os.path.dirname(__file__),
+                                      '../ui/enhanced_relation_editor_widget.ui'))
 
 Debug = True
 
