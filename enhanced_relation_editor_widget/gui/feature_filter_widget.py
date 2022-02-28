@@ -122,7 +122,7 @@ class FeatureFilterWidget(QWidget,
 
         self.mApplyFilterButton.setVisible(False)
         self.mStoreFilterExpressionButton.setVisible(False)
-        self._features_model_filter.set_legacy_filter(FeaturesModelFilter.LegacyFilter.ShowAll)
+        self._features_model_filter.set_feature_filter(FeaturesModelFilter.FeatureFilter.ShowAll)
 
     def filterSelected(self):
         self.mFilterButton.setDefaultAction(self.mActionSelectedFilter)
@@ -130,7 +130,7 @@ class FeatureFilterWidget(QWidget,
         self.mFilterQuery.setVisible(False)
         self.mApplyFilterButton.setVisible(False)
         self.mStoreFilterExpressionButton.setVisible(False)
-        self._features_model_filter.set_legacy_filter(FeaturesModelFilter.LegacyFilter.ShowSelected)
+        self._features_model_filter.set_feature_filter(FeaturesModelFilter.FeatureFilter.ShowSelected)
 
     def filterVisible(self):
         if not self.mLayer.isSpatial():
@@ -142,7 +142,7 @@ class FeatureFilterWidget(QWidget,
         self.mFilterQuery.setVisible(False)
         self.mApplyFilterButton.setVisible(False)
         self.mStoreFilterExpressionButton.setVisible(False)
-        self._features_model_filter.set_legacy_filter(FeaturesModelFilter.LegacyFilter.ShowVisible)
+        self._features_model_filter.set_feature_filter(FeaturesModelFilter.FeatureFilter.ShowVisible)
 
     def filterEdited(self):
         self.mFilterButton.setDefaultAction(self.mActionEditedFilter)
@@ -150,7 +150,7 @@ class FeatureFilterWidget(QWidget,
         self.mFilterQuery.setVisible(False)
         self.mApplyFilterButton.setVisible(False)
         self.mStoreFilterExpressionButton.setVisible(False)
-        self._features_model_filter.set_legacy_filter(FeaturesModelFilter.LegacyFilter.ShowEdited)
+        self._features_model_filter.set_feature_filter(FeaturesModelFilter.FeatureFilter.ShowEdited)
 
     def filterQueryAccepted(self):
         if ((self.mFilterQuery.isVisible() and len(self.mFilterQuery.text()) == 0) or
@@ -405,8 +405,8 @@ class FeatureFilterWidget(QWidget,
         if not filterExpression.prepare(context):
             self.mMessageBar.pushMessage(self.tr("Evaluation error"), filterExpression.evalErrorString(), Qgis.MessageLevel.Warning)
 
-        self._features_model_filter.set_legacy_filter_expression(filterExpression, context)
-        self._features_model_filter.set_legacy_filter(FeaturesModelFilter.LegacyFilter.ShowFilteredList)
+        self._features_model_filter.set_feature_filter_expression(filterExpression, context)
+        self._features_model_filter.set_feature_filter(FeaturesModelFilter.FeatureFilter.ShowFilteredList)
 
     def replaceSearchWidget(self,
                             oldw: QWidget,

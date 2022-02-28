@@ -21,7 +21,7 @@ from enhanced_relation_editor_widget.core.features_model import FeaturesModel
 
 class FeaturesModelFilter(QSortFilterProxyModel):
 
-    class LegacyFilter(IntEnum):
+    class FeatureFilter(IntEnum):
         ShowAll = 1,
         ShowSelected = 2,
         ShowVisible = 3,
@@ -38,10 +38,10 @@ class FeaturesModelFilter(QSortFilterProxyModel):
         self._canvas = canvas
         self._quick_filter = str()
         self._map_filter = list()
-        self._legacy_filter = FeaturesModelFilter.LegacyFilter.ShowAll
-        self._legacy_filter_expression = QgsExpression()
-        self._legacy_filter_expression_context = QgsExpressionContext()
-        self._legacy_filter_filtered_features = list()
+        self._feature_filter = FeaturesModelFilter.FeatureFilter.ShowAll
+        self._feature_filter_expression = QgsExpression()
+        self._feature_filter_expression_context = QgsExpressionContext()
+        self._feature_filter_filtered_features = list()
 
         if self._canvas:
             self._canvas.extentsChanged.connect(self._extent_changed)
@@ -70,25 +70,25 @@ class FeaturesModelFilter(QSortFilterProxyModel):
     def map_filter_active(self):
         return len(self._map_filter) > 0
 
-    def set_legacy_filter(self,
-                          mode):
-        self._legacy_filter = mode
+    def set_feature_filter(self,
+                           mode):
+        self._feature_filter = mode
 
-        if self._legacy_filter == FeaturesModelFilter.LegacyFilter.ShowFilteredList:
+        if self._feature_filter == FeaturesModelFilter.FeatureFilter.ShowFilteredList:
             self._prepare_filtered_features()
 
-        elif self._legacy_filter == FeaturesModelFilter.LegacyFilter.ShowVisible:
+        elif self._feature_filter == FeaturesModelFilter.FeatureFilter.ShowVisible:
             self._prepare_filtered_by_visible_features()
 
         self.invalidateFilter()
 
-    def set_legacy_filter_expression(self,
-                                     expression,
-                                     context):
-        self._legacy_filter_expression = expression
-        self._legacy_filter_expression_context = context
+    def set_feature_filter_expression(self,
+                                      expression,
+                                      context):
+        self._feature_filter_expression = expression
+        self._feature_filter_expression_context = context
 
-        if self._legacy_filter == FeaturesModelFilter.LegacyFilter.ShowFilteredList:
+        if self._feature_filter == FeaturesModelFilter.FeatureFilter.ShowFilteredList:
             self._prepare_filtered_features()
             self.invalidateFilter()
 
@@ -105,18 +105,18 @@ class FeaturesModelFilter(QSortFilterProxyModel):
         if not rowFeatureId:
             return False
 
-        if self._legacy_filter == FeaturesModelFilter.LegacyFilter.ShowAll:
+        if self._feature_filter == FeaturesModelFilter.FeatureFilter.ShowAll:
             pass  # Nothing to do
 
-        elif self._legacy_filter == FeaturesModelFilter.LegacyFilter.ShowSelected:
+        elif self._feature_filter == FeaturesModelFilter.FeatureFilter.ShowSelected:
             if rowFeatureId not in self._layer.selectedFeatureIds():
                 return False
 
-        elif self._legacy_filter == FeaturesModelFilter.LegacyFilter.ShowVisible:
-            if rowFeatureId not in self._legacy_filter_filtered_features:
+        elif self._feature_filter == FeaturesModelFilter.FeatureFilter.ShowVisible:
+            if rowFeatureId not in self._feature_filter_filtered_features:
                 return False
 
-        elif self._legacy_filter == FeaturesModelFilter.LegacyFilter.ShowEdited:
+        elif self._feature_filter == FeaturesModelFilter.FeatureFilter.ShowEdited:
             editBuffer = self._layer.editBuffer()
             if not editBuffer:
                 return False
@@ -126,8 +126,8 @@ class FeaturesModelFilter(QSortFilterProxyModel):
                     editBuffer.isFeatureGeometryChanged(rowFeatureId)):
                 return False
 
-        elif self._legacy_filter == FeaturesModelFilter.LegacyFilter.ShowFilteredList:
-            if rowFeatureId not in self._legacy_filter_filtered_features:
+        elif self._feature_filter == FeaturesModelFilter.FeatureFilter.ShowFilteredList:
+            if rowFeatureId not in self._feature_filter_filtered_features:
                 return False
 
         if self._map_filter:
@@ -146,40 +146,40 @@ class FeaturesModelFilter(QSortFilterProxyModel):
 
     def _prepare_filtered_features(self):
 
-        self._legacy_filter_filtered_features = list()
+        self._feature_filter_filtered_features = list()
 
-        if not self._legacy_filter_expression.isValid():
+        if not self._feature_filter_expression.isValid():
             return
 
         distanceArea = QgsDistanceArea()
         distanceArea.setSourceCrs(self._layer.crs(), QgsProject.instance().transformContext())
         distanceArea.setEllipsoid(QgsProject.instance().ellipsoid())
 
-        fetchGeom = self._legacy_filter_expression.needsGeometry()
+        fetchGeom = self._feature_filter_expression.needsGeometry()
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
-        self._legacy_filter_expression.setGeomCalculator(distanceArea)
-        self._legacy_filter_expression.setDistanceUnits(QgsProject.instance().distanceUnits())
-        self._legacy_filter_expression.setAreaUnits(QgsProject.instance().areaUnits())
+        self._feature_filter_expression.setGeomCalculator(distanceArea)
+        self._feature_filter_expression.setDistanceUnits(QgsProject.instance().distanceUnits())
+        self._feature_filter_expression.setAreaUnits(QgsProject.instance().areaUnits())
 
         # Record the first evaluation error
         error = str()
 
         for f in self._layer.getFeatures():
-            self._legacy_filter_expression_context.setFeature(f)
-            if self._legacy_filter_expression.evaluate(self._legacy_filter_expression_context) != 0:
-                self._legacy_filter_filtered_features.append(f.id())
+            self._feature_filter_expression_context.setFeature(f)
+            if self._feature_filter_expression.evaluate(self._feature_filter_expression_context) != 0:
+                self._feature_filter_filtered_features.append(f.id())
 
             # check if there were errors during evaluating
-            if self._legacy_filter_expression.hasEvalError() and error.isEmpty():
-                error = self._legacy_filter_expression.evalErrorString()
+            if self._feature_filter_expression.hasEvalError() and error.isEmpty():
+                error = self._feature_filter_expression.evalErrorString()
 
         QApplication.restoreOverrideCursor()
 
     def _prepare_filtered_by_visible_features(self):
 
-        self._legacy_filter_filtered_features = list()
+        self._feature_filter_filtered_features = list()
 
         if not self._canvas:
             return
@@ -191,10 +191,10 @@ class FeaturesModelFilter(QSortFilterProxyModel):
         request.setFilterRect(rectangle)
 
         for feature in self._layer.getFeatures(request):
-            self._legacy_filter_filtered_features.append(feature.id())
+            self._feature_filter_filtered_features.append(feature.id())
 
     def _extent_changed(self):
-        if self._legacy_filter == FeaturesModelFilter.LegacyFilter.ShowVisible:
+        if self._feature_filter == FeaturesModelFilter.FeatureFilter.ShowVisible:
             self._prepare_filtered_by_visible_features()
 
         self.invalidateFilter()
