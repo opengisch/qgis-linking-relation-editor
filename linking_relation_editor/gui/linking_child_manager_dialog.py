@@ -239,8 +239,11 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
 
     def _linkSelected(self):
         featuresModelElements = []
-        for modelIndex in self.mFeaturesListViewLeft.selectedIndexes():
-            featuresModelElements.append(self._featuresModelLeft.take_item(modelIndex))
+        selected_indexes = self.mFeaturesListViewLeft.selectedIndexes()[:]
+        for model_index in reversed(selected_indexes):
+            source_model_index = self._featuresModelFilterLeft.mapToSource(model_index)
+            featuresModelElements.append(self._featuresModelLeft.take_item(source_model_index))
+        self._featuresModelFilterLeft.invalidate()
 
         for featuresModelElement in featuresModelElements:
             if featuresModelElement.feature_state() == FeaturesModel.FeatureState.ToBeUnlinked:
@@ -354,7 +357,7 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
                                         selectedFeatureIds)
 
     def _map_tool_select_finished(self,
-                                       features: list):
+                                  features: list):
 
         self.mFeaturesListViewLeft.selectionModel().reset()
 
