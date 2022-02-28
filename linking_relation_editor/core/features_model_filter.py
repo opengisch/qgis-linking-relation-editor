@@ -16,7 +16,7 @@ from qgis.core import (
     QgsVectorLayer
 )
 from qgis.gui import QgsMapCanvas
-from enhanced_relation_editor_widget.core.features_model import FeaturesModel
+from linking_relation_editor.core.features_model import FeaturesModel
 
 
 class FeaturesModelFilter(QSortFilterProxyModel):

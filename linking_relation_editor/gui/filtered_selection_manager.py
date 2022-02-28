@@ -8,7 +8,7 @@
 #
 # -----------------------------------------------------------
 
-from enhanced_relation_editor_widget.gui.vector_layer_selection_manager import VectorLayerSelectionManager
+from linking_relation_editor.gui.vector_layer_selection_manager import VectorLayerSelectionManager
 
 
 class FilteredSelectionManager(VectorLayerSelectionManager):

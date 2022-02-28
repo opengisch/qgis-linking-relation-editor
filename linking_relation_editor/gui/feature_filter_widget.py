@@ -32,7 +32,7 @@ from qgis.gui import (
     QgsGui,
     QgsMessageBar
 )
-from enhanced_relation_editor_widget.core.features_model_filter import FeaturesModelFilter
+from linking_relation_editor.core.features_model_filter import FeaturesModelFilter
 
 
 WidgetUi, _ = loadUiType(os.path.join(os.path.dirname(__file__),

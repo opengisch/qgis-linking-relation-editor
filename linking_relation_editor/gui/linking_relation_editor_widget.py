@@ -41,17 +41,17 @@ from qgis.gui import (
     QgsMessageBar,
     QgsRelationEditorWidget
 )
-from enhanced_relation_editor_widget.core.plugin_helper import PluginHelper
-from enhanced_relation_editor_widget.gui.filtered_selection_manager import FilteredSelectionManager
-from enhanced_relation_editor_widget.gui.relation_editor_link_child_manager_dialog import RelationEditorLinkChildManagerDialog
+from linking_relation_editor.core.plugin_helper import PluginHelper
+from linking_relation_editor.gui.filtered_selection_manager import FilteredSelectionManager
+from linking_relation_editor.gui.linking_child_manager_dialog import LinkingChildManagerDialog
 
 WidgetUi, _ = loadUiType(os.path.join(os.path.dirname(__file__),
-                                      '../ui/enhanced_relation_editor_widget.ui'))
+                                      '../ui/linking_relation_editor_widget.ui'))
 
 Debug = True
 
 
-class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
+class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
     class MultiEditFeatureType(IntEnum):
         Parent = 1,
@@ -473,13 +473,13 @@ class EnhancedRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
             layer = self.relation().referencingLayer()
 
-        relationEditorLinkChildManagerDialog = RelationEditorLinkChildManagerDialog(layer,
-                                                                                    self.relation().referencedLayer(),
-                                                                                    self.feature(),
-                                                                                    self.relation(),
-                                                                                    self.nmRelation(),
-                                                                                    self.editorContext(),
-                                                                                    self)
+        relationEditorLinkChildManagerDialog = LinkingChildManagerDialog(layer,
+                                                                         self.relation().referencedLayer(),
+                                                                         self.feature(),
+                                                                         self.relation(),
+                                                                         self.nmRelation(),
+                                                                         self.editorContext(),
+                                                                         self)
         relationEditorLinkChildManagerDialog.accepted.connect(self._relationEditorLinkChildManagerDialogAccepted)
         relationEditorLinkChildManagerDialog.show()
 

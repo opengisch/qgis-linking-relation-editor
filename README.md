@@ -1,1 +1,1 @@
-## Enhanced Relation Editor Widget plugin for QGIS
+## Linking Relation Editor plugin for QGIS

@@ -1,18 +1,18 @@
 [general]
-name=Enhanced Relation Editor Widget
+name=Linking Relation Editor
 qgisMinimumVersion=3.22
 description=Provides a relation editor widget with an alternative link child dialog
 about=Provides a relation editor widget with an alternative link child dialog
-version=dev
+version=0.0.1
 author=OPENGIS.ch
 email=info@opengis.ch
 
 # Tags are comma separated with spaces allowed
 tags=relation
 
-tracker=https://github.com/opengisch/qgis-enhanced-relation-editor-widget/issues
-homepage=https://github.com/opengisch/qgis-enhanced-relation-editor-widget
-repository=https://github.com/opengisch/qgis-enhanced-relation-editor-widget
+tracker=https://github.com/opengisch/qgis-linking-relation-editor/issues
+homepage=https://github.com/opengisch/qgis-linking-relation-editor
+repository=https://github.com/opengisch/qgis-linking-relation-editor
 
 category=Vector
 
