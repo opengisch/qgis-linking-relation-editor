@@ -1,6 +1,7 @@
 [general]
 name=Linking Relation Editor
 qgisMinimumVersion=3.22
+icon=images/LinkingRelationEditor-icon.svg
 description=Provides a relation editor widget with an alternative link child dialog
 about=Provides a relation editor widget with an alternative link child dialog
 version=0.9.0

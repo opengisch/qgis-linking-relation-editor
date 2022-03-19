@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" x="0%" y="0%" viewBox="0 0 24 24" xml:space="preserve">
+  <defs>
+    <linearGradient id="a" x1="-1.137%" y1="52.788%" x2="100%" y2="50%">
+      <stop offset="0%" style="stop-color:#73a44d;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#1b4761;stop-opacity:1"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#a)" stroke="#FFF" stroke-width=".48" stroke-linecap="square" d="M12.2 4.56c4.18 0 7.57 3.37 7.57 7.54 0 4.16-3.39 7.53-7.57 7.53s-7.56-3.37-7.56-7.53c0-4.17 3.38-7.54 7.56-7.54z"/>
+  <path fill="none" stroke="#FDFDFD" stroke-width=".48" stroke-linecap="square" d="m12.3 4.61-.02 15"/>
+  <path fill="none" stroke="#FFF" stroke-width=".48" stroke-linecap="square" d="M4.64 12.18h15.01"/>
+  <path fill="none" stroke="#000" stroke-width=".24" stroke-linecap="square" d="M12.24 4.57c4.17 0 7.56 3.37 7.56 7.54 0 4.16-3.39 7.53-7.56 7.53-4.18 0-7.57-3.37-7.57-7.53 0-4.17 3.39-7.54 7.57-7.54z"/>
+  <path fill="#339400" stroke="#000" stroke-width=".24" stroke-linecap="round" d="M13.09 6.17h2.63m-2.63 1 3.36-.01"/>
+  <path fill="none" stroke="#030303" stroke-width=".24" stroke-linecap="square" d="m4.68 12.18 15.02-.01"/>
+  <path fill="#339400" stroke="#000" stroke-width=".24" stroke-linecap="round" d="m13.1 8.15 3.36-.02m-3.3 1.13 5.44.12"/>
+  <path fill="none" stroke="#000" stroke-width=".24" stroke-linecap="square" d="m12.3 4.61-.02 15"/>
+  <path fill="#339400" stroke="#000" stroke-width=".24" stroke-linecap="round" d="m13.24 11.31 5.89-.02m-6.19-.94 5.88-.01"/>
+  <path fill="#7F7F7F" stroke="#FFF" stroke-width=".768" stroke-linecap="square" d="m5.92 15.76 4.56-4.08a.73.73 0 0 1 1.03.05l1.31 1.47a.73.73 0 0 1-.06 1.02l-4.55 4.09a.73.73 0 0 1-1.03-.06l-1.32-1.46a.73.73 0 0 1 .06-1.03z"/>
+  <path d="m12.148 10.205 4.55-4.08a.73.73 0 0 1 1.03.06l1.31 1.46a.73.73 0 0 1-.05 1.03l-4.56 4.08a.73.73 0 0 1-1.03-.05l-1.31-1.47a.73.73 0 0 1 .06-1.03z" style="fill:#bcbcbc;fill-opacity:1;fill-rule:nonzero;stroke:#fff;stroke-width:.76800001;stroke-linecap:square;stroke-linejoin:miter;stroke-opacity:1"/>
+  <path fill="none" stroke="#000" stroke-width=".384" stroke-linecap="square" d="m5.92 15.76 4.56-4.08a.73.73 0 0 1 1.03.05l1.31 1.47a.73.73 0 0 1-.06 1.02l-4.55 4.09a.73.73 0 0 1-1.03-.06l-1.32-1.46a.73.73 0 0 1 .06-1.03z"/>
+  <path d="m12.148 10.205 4.55-4.08a.73.73 0 0 1 1.03.06l1.31 1.46a.73.73 0 0 1-.05 1.03l-4.56 4.08a.73.73 0 0 1-1.03-.05l-1.31-1.47a.73.73 0 0 1 .06-1.03z" style="fill:#aeaeae;fill-opacity:0;fill-rule:nonzero;stroke:#000;stroke-width:.384;stroke-linecap:square;stroke-linejoin:miter;stroke-opacity:1" fill="none"/>
+  <path d="m11.292 13.224 2.32-2.1" style="fill:#000;fill-opacity:0;fill-rule:nonzero;stroke:#fff;stroke-width:.76800001;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1" fill="none"/>
+  <path d="m11.292 13.224 2.32-2.1" style="fill:#000;fill-opacity:0;fill-rule:nonzero;stroke:#000;stroke-width:.384;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1" fill="none"/>
+  <path fill="#73A44D" stroke="#000" stroke-width=".24" stroke-linecap="round" d="M10.35 6.29c.42 0 .76.35.76.77 0 .42-.34.77-.76.77a.76.76 0 0 1-.75-.77c0-.42.33-.77.75-.77zm-.8 2.84c.34 0 .62.28.62.63s-.28.63-.62.63c-.34 0-.62-.28-.62-.63s.28-.63.62-.63zm-2.39-.31c.28 0 .51.21.51.47s-.23.47-.51.47-.5-.21-.5-.47.22-.47.5-.47z"/>
+  <path fill="#1B4761" stroke="#000" stroke-width=".24" stroke-linecap="round" d="m13.72 14.41 1.91-.96 1.85.92v1.2l-.77.76-1.22-.16-.08 1.41-1.7-.47-.4-.47-.34-.7.84-.37-.09-1.16z"/>
+</svg>
