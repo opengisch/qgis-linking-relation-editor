@@ -185,6 +185,28 @@ class FeaturesModel(QAbstractListModel):
 
         return feature
 
+    def take_items(self,
+                  indexes):
+
+        if not indexes:
+            return None
+        features=[]
+        rows_to_remove = []
+        for index in indexes:
+            row = index.row()
+            features.append(self._modelFeatures[row])
+            rows_to_remove.append(row)
+
+        rows_to_remove.sort(reverse=True)
+        for row in rows_to_remove:
+            self.beginRemoveRows(QModelIndex(),
+                                row,
+                                row+1)
+            del self._modelFeatures[row]
+            self.endRemoveRows()
+
+        return features
+
     def contains(self,
                  feature_id: int):
         for feature in self._modelFeatures:
