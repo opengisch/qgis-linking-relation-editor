@@ -68,7 +68,7 @@ class FeaturesModel(QAbstractListModel):
 
         def display_icon(self):
             if self._featureState == FeaturesModel.FeatureState.Unlinked or self._featureState == FeaturesModel.FeatureState.Linked:
-                return QIcon()
+                return QIcon(os.path.join(os.path.dirname(__file__), '../images/mNoAction.svg'))
             elif self._featureState == FeaturesModel.FeatureState.ToBeLinked:
                 return QIcon(os.path.join(os.path.dirname(__file__), '../images/mActionToBeLinked.svg'))
             elif self._featureState == FeaturesModel.FeatureState.ToBeUnlinked:
