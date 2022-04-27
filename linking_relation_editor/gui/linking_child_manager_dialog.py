@@ -81,7 +81,7 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
         self._actionLinkSelected = QAction(QgsApplication.getThemeIcon("/mActionArrowRight.svg"),
                                            self.tr("Link selected"))
         self._actionUnlinkSelected = QAction(QgsApplication.getThemeIcon("/mActionArrowLeft.svg"),
-                                             self.tr("Unlink seleted"))
+                                             self.tr("Unlink selected"))
         self._actionLinkAll = QAction(QgsApplication.getThemeIcon("/mActionDoubleArrowRight.svg"),
                                       self.tr("Link all"))
         self._actionUnlinkAll = QAction(QgsApplication.getThemeIcon("/mActionDoubleArrowLeft.svg"),
@@ -255,7 +255,7 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
 
     def _unlinkSelected(self):
         featuresModelElements = []
-        for modelIndex in self.mFeaturesListViewRight.selectedIndexes():
+        for modelIndex in reversed(self.mFeaturesListViewRight.selectedIndexes()):
             featuresModelElements.append(self._featuresModelRight.take_item(modelIndex))
 
         for featuresModelElement in featuresModelElements:
