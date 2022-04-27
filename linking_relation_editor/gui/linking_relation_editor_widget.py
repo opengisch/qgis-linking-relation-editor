@@ -317,17 +317,17 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
         self.mFormViewButton.setVisible(True)
         self.mTableViewButton.setVisible(True)
-        self.mMultiEditInfoLabel.setVisible(True)
+        self.mMultiEditInfoLabel.setVisible(False)
 
         self.mStackedWidget.setCurrentWidget(self.mDualView)
 
         request = self.relation().getRelatedFeaturesRequest(self.feature())
-
         if self.nmRelation().isValid():
             filters = []
             for feature in self.relation().referencingLayer().getFeatures(request):
-                filter = self.nmRelation().getReferencedFeatureRequest(feature).filterExpression().expression()
-                filters.append(filter.prepend('(').append(')'))
+                referenced_request = self.nmRelation().getReferencedFeatureRequest(feature)
+                filter = referenced_request.filterExpression().expression()
+                filters.append('('+filter+')')
 
             nmRequest = QgsFeatureRequest()
             nmRequest.setFilterExpression(" OR ".join(filters))
@@ -338,8 +338,8 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
             self.initDualView(self.relation().referencingLayer(), request)
 
     def updateUiMultiEdit(self):
-        self.mFormViewButton.setVisible(True)
-        self.mTableViewButton.setVisible(True)
+        self.mFormViewButton.setVisible(False)
+        self.mTableViewButton.setVisible(False)
         self.mMultiEditInfoLabel.setVisible(True)
         self.mStackedWidget.setCurrentWidget(self.mMultiEditStackedWidgetPage)
         parentTreeWidgetItems = []
@@ -690,7 +690,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         if Qgis.QGIS_VERSION_INT < 32400:
             return [self.feature()]
         else:
-            return self.featureList()
+            return self.features()
 
     def _relationEditorLinkChildManagerDialogAccepted(self):
         relationEditorLinkChildManagerDialog = self.sender()
