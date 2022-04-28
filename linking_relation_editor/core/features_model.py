@@ -68,7 +68,7 @@ class FeaturesModel(QAbstractListModel):
 
         def display_icon(self):
             if self._featureState == FeaturesModel.FeatureState.Unlinked or self._featureState == FeaturesModel.FeatureState.Linked:
-                return QIcon()
+                return QIcon(os.path.join(os.path.dirname(__file__), '../images/mNoAction.svg'))
             elif self._featureState == FeaturesModel.FeatureState.ToBeLinked:
                 return QIcon(os.path.join(os.path.dirname(__file__), '../images/mActionToBeLinked.svg'))
             elif self._featureState == FeaturesModel.FeatureState.ToBeUnlinked:
@@ -184,6 +184,28 @@ class FeaturesModel(QAbstractListModel):
         self.endRemoveRows()
 
         return feature
+
+    def take_items(self,
+                  indexes):
+
+        if not indexes:
+            return None
+        features=[]
+        rows_to_remove = []
+        for index in indexes:
+            row = index.row()
+            features.append(self._modelFeatures[row])
+            rows_to_remove.append(row)
+
+        rows_to_remove.sort(reverse=True)
+        for row in rows_to_remove:
+            self.beginRemoveRows(QModelIndex(),
+                                row,
+                                row+1)
+            del self._modelFeatures[row]
+            self.endRemoveRows()
+
+        return features
 
     def contains(self,
                  feature_id: int):

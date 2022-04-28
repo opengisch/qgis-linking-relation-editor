@@ -81,7 +81,7 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
         self._actionLinkSelected = QAction(QgsApplication.getThemeIcon("/mActionArrowRight.svg"),
                                            self.tr("Link selected"))
         self._actionUnlinkSelected = QAction(QgsApplication.getThemeIcon("/mActionArrowLeft.svg"),
-                                             self.tr("Unlink seleted"))
+                                             self.tr("Unlink selected"))
         self._actionLinkAll = QAction(QgsApplication.getThemeIcon("/mActionDoubleArrowRight.svg"),
                                       self.tr("Link all"))
         self._actionUnlinkAll = QAction(QgsApplication.getThemeIcon("/mActionDoubleArrowLeft.svg"),
@@ -240,9 +240,9 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
     def _linkSelected(self):
         featuresModelElements = []
         selected_indexes = self.mFeaturesListViewLeft.selectedIndexes()[:]
-        for model_index in reversed(selected_indexes):
-            source_model_index = self._featuresModelFilterLeft.mapToSource(model_index)
-            featuresModelElements.append(self._featuresModelLeft.take_item(source_model_index))
+        source_model_indexes = [self._featuresModelFilterLeft.mapToSource(model_index) for model_index in selected_indexes]
+        featuresModelElements = self._featuresModelLeft.take_items(source_model_indexes)
+        
         self._featuresModelFilterLeft.invalidate()
 
         for featuresModelElement in featuresModelElements:
@@ -255,8 +255,8 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
 
     def _unlinkSelected(self):
         featuresModelElements = []
-        for modelIndex in self.mFeaturesListViewRight.selectedIndexes():
-            featuresModelElements.append(self._featuresModelRight.take_item(modelIndex))
+        indexes = self.mFeaturesListViewRight.selectedIndexes()[:]
+        featuresModelElements = self._featuresModelRight.take_items(indexes)
 
         for featuresModelElement in featuresModelElements:
             if featuresModelElement.feature_state() == FeaturesModel.FeatureState.ToBeLinked:
@@ -269,10 +269,9 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
     def _linkAll(self):
         featuresModelElements = list()
         if self._featuresModelFilterLeft.filter_active():
-            for row in reversed(range(self._featuresModelFilterLeft.rowCount())):
-                modelIndex = self._featuresModelFilterLeft.index(row, 0)
-                sourceModelIndex = self._featuresModelFilterLeft.mapToSource(modelIndex)
-                featuresModelElements.append(self._featuresModelLeft.take_item(sourceModelIndex))
+            source_model_indexes = [self._featuresModelFilterLeft.mapToSource(self._featuresModelFilterLeft.index(row, 0)) for row in range(self._featuresModelFilterLeft.rowCount())]
+            featuresModelElements = self._featuresModelLeft.take_items(source_model_indexes)
+
         else:
             featuresModelElements = self._featuresModelLeft.take_all_items()
         for featuresModelElement in featuresModelElements:
