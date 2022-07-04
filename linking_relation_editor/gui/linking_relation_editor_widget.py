@@ -18,7 +18,7 @@ from qgis.PyQt.QtCore import (
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import (
     QButtonGroup,
-    QDialog
+    QSplitter
 )
 from qgis.PyQt.uic import loadUiType
 from qgis.core import (
@@ -165,18 +165,22 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         self.mZoomToFeatureButton.clicked.connect(self.zoomToSelectedFeatures)
         self.mMultiEditTreeWidget.itemSelectionChanged.connect(self.multiEditItemSelectionChanged)
 
+        self.mOneToOne = False
+
         # Set initial state for add / remove etc.buttons
         self.updateButtons()
 
     def config(self):
         return {"buttons": metaEnumFromValue(QgsRelationEditorWidget.Button.AllButtons).valueToKeys(self.visibleButtons()),
-                "show_first_feature": self.mShowFirstFeature}
+                "show_first_feature": self.mShowFirstFeature,
+                "one_to_one": self.mOneToOne}
 
     def setConfig(self, config):
         metaEnumButtons = metaEnumFromValue(QgsRelationEditorWidget.Button.AllButtons)
         (self.mButtonsVisibility, ok) = metaEnumButtons.keysToValue(config.get("buttons",
                                                                                metaEnumButtons.valueToKeys(QgsRelationEditorWidget.Button.AllButtons)))
         self.mShowFirstFeature = config.get("show_first_feature", True)
+        self.mOneToOne = config.get("one_to_one")
         self.updateButtons()
 
     def initDualView(self, layer, request):
@@ -284,6 +288,15 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         self.mDeleteFeatureButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.DeleteChildFeature))
         self.mZoomToFeatureButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.ZoomToChildFeature) and bool(self.editorContext().mapCanvas()) and spatial)
 
+        splitters = self.mDualView.findChildren(QSplitter)
+        for splitter in splitters:
+            if splitter.objectName() == "mAttributeEditorViewSplitter":
+                if self.mOneToOne:
+                    splitter.setSizes([0, 1])
+                else:
+                    splitter.setSizes([1, 1])
+                break
+
     def updateUi(self):
         self._updateUiTimer.start(200)
 
@@ -315,11 +328,14 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
     def updateUiSingleEdit(self):
 
-        self.mFormViewButton.setVisible(True)
-        self.mTableViewButton.setVisible(True)
+        self.mFormViewButton.setVisible(not self.mOneToOne)
+        self.mTableViewButton.setVisible(not self.mOneToOne)
         self.mMultiEditInfoLabel.setVisible(False)
 
         self.mStackedWidget.setCurrentWidget(self.mDualView)
+
+        if self.mOneToOne:
+            self.setViewMode(QgsDualView.AttributeEditor)
 
         request = self.relation().getRelatedFeaturesRequest(self.feature())
         if self.nmRelation().isValid():
