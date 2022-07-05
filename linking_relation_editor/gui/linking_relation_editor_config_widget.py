@@ -8,20 +8,11 @@
 #
 # -----------------------------------------------------------
 
-import os
-
-from qgis.PyQt.QtCore import QTimer
 from qgis.PyQt.QtWidgets import QComboBox
-from qgis.PyQt.uic import loadUiType
 
 from qgis.gui import (
-    QgsAbstractRelationEditorConfigWidget,
     QgsRelationEditorConfigWidget
 )
-
-
-WidgetUi, _ = loadUiType(os.path.join(os.path.dirname(__file__),
-                                      '../ui/linking_relation_editor_config_widget.ui'))
 
 
 class LinkingRelationEditorConfigWidget(QgsRelationEditorConfigWidget):

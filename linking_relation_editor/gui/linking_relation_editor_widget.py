@@ -334,9 +334,6 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
         self.mStackedWidget.setCurrentWidget(self.mDualView)
 
-        if self.mOneToOne:
-            self.setViewMode(QgsDualView.AttributeEditor)
-
         request = self.relation().getRelatedFeaturesRequest(self.feature())
         if self.nmRelation().isValid():
             filters = []
@@ -352,6 +349,16 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
         elif self.relation().referencingLayer():
             self.initDualView(self.relation().referencingLayer(), request)
+
+        if self.mOneToOne:
+            self.setViewMode(QgsDualView.AttributeEditor)
+
+            featureLinked = self.mDualView.featureCount() > 0
+            canAdd = self.mAddFeatureButton.isEnabled() and not featureLinked
+            canAddGeometry = self.mAddFeatureGeometryButton.isEnabled() and not featureLinked
+            self.mAddFeatureButton.setEnabled(canAdd)
+            self.mAddFeatureGeometryButton.setEnabled(canAddGeometry)
+
 
     def updateUiMultiEdit(self):
         self.mFormViewButton.setVisible(False)
