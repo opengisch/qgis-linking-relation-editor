@@ -195,7 +195,13 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         if Qgis.QGIS_VERSION_INT < 32400:
             self.mDualView.init(layer, self.editorContext().mapCanvas(), request, ctx, True)
         else:
-            self.mDualView.init(layer, self.editorContext().mapCanvas(), request, ctx, True, self.mShowFirstFeature)
+            showFirstFeature = self.mShowFirstFeature
+
+            # For one to one always show the first feature
+            if self.mOneToOne:
+                showFirstFeature = True
+
+            self.mDualView.init(layer, self.editorContext().mapCanvas(), request, ctx, True, showFirstFeature)
 
         self.mFeatureSelectionMgr = FilteredSelectionManager(layer, request, self.mDualView)
         self.mDualView.setFeatureSelectionManager(self.mFeatureSelectionMgr)
@@ -358,6 +364,11 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
             canAddGeometry = self.mAddFeatureGeometryButton.isEnabled() and not featureLinked
             self.mAddFeatureButton.setEnabled(canAdd)
             self.mAddFeatureGeometryButton.setEnabled(canAddGeometry)
+
+            if self.nmRelation().isValid():
+                self.nmRelation().referencedLayer().selectByIds(self.mDualView.filteredFeatures())
+            else:
+                self.relation().referencingLayer().selectByIds(self.mDualView.filteredFeatures())
 
 
     def updateUiMultiEdit(self):
