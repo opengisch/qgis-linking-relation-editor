@@ -144,6 +144,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         self.mMultiEditInfoLabel.setText("")
 
         # add dual view(single feature content)
+        self.mDualViewInitialized = False
         self.mDualView = QgsDualView(self)
         self.mDualView.setView(self.mViewMode)
         self.mDualView.showContextMenuExternally.connect(self.showContextMenu)
@@ -205,6 +206,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
         self.mFeatureSelectionMgr = FilteredSelectionManager(layer, request, self.mDualView)
         self.mDualView.setFeatureSelectionManager(self.mFeatureSelectionMgr)
+        self.mDualViewInitialized = True
 
         self.mFeatureSelectionMgr.selectionChanged.connect(self.updateButtons)
 
@@ -272,6 +274,12 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
             canRemove = canRemove and selectionNotEmpty
             canUnlink = canUnlink and selectionNotEmpty
 
+        if self.mDualViewInitialized and self.mOneToOne:
+            featureLinked = self.mDualView.featureCount() > 0
+            canAdd &= not featureLinked
+            canAddGeometry &= not featureLinked
+            canLink &= not featureLinked
+
         self.mToggleEditingButton.setEnabled(toggleEditingButtonEnabled)
         self.mAddFeatureButton.setEnabled(canAdd)
         self.mAddFeatureGeometryButton.setEnabled(canAddGeometry)
@@ -290,7 +298,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         self.mSaveEditsButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.SaveChildEdits) and not self._layerInSameTransactionGroup)
         self.mAddFeatureButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.AddChildFeature) and not spatial)
         self.mAddFeatureGeometryButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.AddChildFeature) and bool(self.editorContext().mapCanvas()) and bool(self.editorContext().cadDockWidget()) and spatial)
-        self.mDuplicateFeatureButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.DuplicateChildFeature))
+        self.mDuplicateFeatureButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.DuplicateChildFeature) and not self.mOneToOne)
         self.mDeleteFeatureButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.DeleteChildFeature))
         self.mZoomToFeatureButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.ZoomToChildFeature) and bool(self.editorContext().mapCanvas()) and spatial)
 
@@ -358,12 +366,6 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
         if self.mOneToOne:
             self.setViewMode(QgsDualView.AttributeEditor)
-
-            featureLinked = self.mDualView.featureCount() > 0
-            canAdd = self.mAddFeatureButton.isEnabled() and not featureLinked
-            canAddGeometry = self.mAddFeatureGeometryButton.isEnabled() and not featureLinked
-            self.mAddFeatureButton.setEnabled(canAdd)
-            self.mAddFeatureGeometryButton.setEnabled(canAddGeometry)
 
             if self.nmRelation().isValid():
                 self.nmRelation().referencedLayer().selectByIds(self.mDualView.filteredFeatures())
