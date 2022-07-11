@@ -29,7 +29,7 @@ class LinkingRelationEditorConfigWidget(QgsRelationEditorConfigWidget):
               self.__relation_cardinality_combobox = combobox
               break
 
-        self.__relation_cardinality_combobox.addItem("One to one",
+        self.__relation_cardinality_combobox.addItem("One to one relation",
                                                      LinkingRelationEditorConfigWidget.USER_DATA_ONE_TO_ONE)
     
     def setConfig(self, config):
