@@ -302,14 +302,19 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         self.mDeleteFeatureButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.DeleteChildFeature))
         self.mZoomToFeatureButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.ZoomToChildFeature) and bool(self.editorContext().mapCanvas()) and spatial)
 
+        splitter_name = "mAttributeEditorViewSplitter"
+        splitter_found = False
         splitters = self.mDualView.findChildren(QSplitter)
         for splitter in splitters:
-            if splitter.objectName() == "mAttributeEditorViewSplitter":
+            if splitter.objectName() == splitter_name:
                 if self.mOneToOne:
                     splitter.setSizes([0, 1])
                 else:
                     splitter.setSizes([1, 1])
                 break
+
+        if not splitter_found:
+            QgsLogger.warning(self.tr("QSplitter with object name '{}' not found".format(splitter_name)))
 
     def updateUi(self):
         self._updateUiTimer.start(200)

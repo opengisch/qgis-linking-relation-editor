@@ -23,14 +23,18 @@ class LinkingRelationEditorConfigWidget(QgsRelationEditorConfigWidget):
         super().__init__(relation, parent)
 
         self.__relation_cardinality_combobox = None
+        relation_cardinality_combobox_name = "mRelationCardinalityCombo"
         comboboxes = self.parent().findChildren(QComboBox)
         for combobox in comboboxes:
-            if combobox.objectName() == "mRelationCardinalityCombo":
+            if combobox.objectName() == relation_cardinality_combobox_name:
               self.__relation_cardinality_combobox = combobox
               break
 
-        self.__relation_cardinality_combobox.addItem("One to one relation",
-                                                     LinkingRelationEditorConfigWidget.USER_DATA_ONE_TO_ONE)
+        if self.__relation_cardinality_combobox == None:
+            QgsLogger.warning(self.tr("QCombobox with object name '{}' not found".format(relation_cardinality_combobox_name)))
+        else:
+            self.__relation_cardinality_combobox.addItem("One to one relation",
+                                                         LinkingRelationEditorConfigWidget.USER_DATA_ONE_TO_ONE)
     
     def setConfig(self, config):
         one_to_one = config.get("one_to_one",
