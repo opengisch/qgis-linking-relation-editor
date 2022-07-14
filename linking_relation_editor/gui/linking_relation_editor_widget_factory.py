@@ -10,6 +10,7 @@
 
 from qgis.gui import QgsAbstractRelationEditorWidgetFactory, QgsRelationEditorConfigWidget
 from linking_relation_editor.gui.linking_relation_editor_widget import LinkingRelationEditorWidget
+from linking_relation_editor.gui.linking_relation_editor_config_widget import LinkingRelationEditorConfigWidget
 
 WIDGET_TYPE = "linking_relation_editor"
 
@@ -25,4 +26,4 @@ class LinkingRelationEditorWidgetFactory(QgsAbstractRelationEditorWidgetFactory)
         return LinkingRelationEditorWidget(config, parent)
 
     def configWidget(self, relation, parent):
-        return QgsRelationEditorConfigWidget(relation, parent)
+        return LinkingRelationEditorConfigWidget(relation, parent)
