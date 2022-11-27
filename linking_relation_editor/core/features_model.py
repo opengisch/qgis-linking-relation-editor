@@ -189,8 +189,9 @@ class FeaturesModel(QAbstractListModel):
                   indexes):
 
         if not indexes:
-            return None
-        features=[]
+            return []
+
+        features = []
         rows_to_remove = []
         for index in indexes:
             row = index.row()

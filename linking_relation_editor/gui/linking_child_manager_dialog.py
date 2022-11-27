@@ -238,11 +238,13 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
         return linkedFeatures.values(), unlinkedFeatures, request
 
     def _linkSelected(self):
-        featuresModelElements = []
         selected_indexes = self.mFeaturesListViewLeft.selectedIndexes()[:]
         source_model_indexes = [self._featuresModelFilterLeft.mapToSource(model_index) for model_index in selected_indexes]
         featuresModelElements = self._featuresModelLeft.take_items(source_model_indexes)
-        
+
+        if not featuresModelElements:
+            return
+
         self._featuresModelFilterLeft.invalidate()
 
         for featuresModelElement in featuresModelElements:
@@ -254,9 +256,11 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
         self._featuresModelRight.add_features_model_items(featuresModelElements)
 
     def _unlinkSelected(self):
-        featuresModelElements = []
         indexes = self.mFeaturesListViewRight.selectedIndexes()[:]
         featuresModelElements = self._featuresModelRight.take_items(indexes)
+
+        if not featuresModelElements:
+            return
 
         for featuresModelElement in featuresModelElements:
             if featuresModelElement.feature_state() == FeaturesModel.FeatureState.ToBeLinked:
@@ -267,13 +271,17 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
         self._featuresModelLeft.add_features_model_items(featuresModelElements)
 
     def _linkAll(self):
-        featuresModelElements = list()
+        featuresModelElements = []
         if self._featuresModelFilterLeft.filter_active():
             source_model_indexes = [self._featuresModelFilterLeft.mapToSource(self._featuresModelFilterLeft.index(row, 0)) for row in range(self._featuresModelFilterLeft.rowCount())]
             featuresModelElements = self._featuresModelLeft.take_items(source_model_indexes)
 
         else:
             featuresModelElements = self._featuresModelLeft.take_all_items()
+
+        if not featuresModelElements:
+            return
+
         for featuresModelElement in featuresModelElements:
             if featuresModelElement.feature_state() == FeaturesModel.FeatureState.ToBeUnlinked:
                 featuresModelElement.set_feature_state(FeaturesModel.FeatureState.Linked)
@@ -284,6 +292,10 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
 
     def _unlinkAll(self):
         featuresModelElements = self._featuresModelRight.take_all_items()
+
+        if not featuresModelElements:
+            return
+
         for featuresModelElement in featuresModelElements:
             if featuresModelElement.feature_state() == FeaturesModel.FeatureState.ToBeLinked:
                 featuresModelElement.set_feature_state(FeaturesModel.FeatureState.Unlinked)
