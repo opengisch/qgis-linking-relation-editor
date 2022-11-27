@@ -271,7 +271,7 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
         self._featuresModelLeft.add_features_model_items(featuresModelElements)
 
     def _linkAll(self):
-        featuresModelElements = None
+        featuresModelElements = []
         if self._featuresModelFilterLeft.filter_active():
             source_model_indexes = [self._featuresModelFilterLeft.mapToSource(self._featuresModelFilterLeft.index(row, 0)) for row in range(self._featuresModelFilterLeft.rowCount())]
             featuresModelElements = self._featuresModelLeft.take_items(source_model_indexes)
