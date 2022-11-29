@@ -1,6 +1,5 @@
 from enum import IntEnum
-from qgis.PyQt.QtCore import Qt, QModelIndex, QObject, QSortFilterProxyModel
-from qgis.PyQt.QtWidgets import QApplication
+
 from qgis.core import (
     QgsDistanceArea,
     QgsExpression,
@@ -10,6 +9,9 @@ from qgis.core import (
     QgsVectorLayer,
 )
 from qgis.gui import QgsMapCanvas
+from qgis.PyQt.QtCore import QModelIndex, QObject, QSortFilterProxyModel, Qt
+from qgis.PyQt.QtWidgets import QApplication
+
 from linking_relation_editor.core.features_model import FeaturesModel
 
 
@@ -45,7 +47,9 @@ class FeaturesModelFilter(QSortFilterProxyModel):
         self.invalidateFilter()
 
     def quick_filter_active(self):
-        return len(self._quick_filter) > 0
+        return (
+            self._quick_filter or self._map_filter or self._feature_filter != FeaturesModelFilter.FeatureFilter.ShowAll
+        )
 
     def set_map_filter(self, map_filter: list):
         self._map_filter = map_filter
