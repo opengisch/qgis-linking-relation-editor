@@ -1,11 +1,5 @@
-
 from enum import IntEnum
-from qgis.PyQt.QtCore import (
-    Qt,
-    QModelIndex,
-    QObject,
-    QSortFilterProxyModel
-)
+from qgis.PyQt.QtCore import Qt, QModelIndex, QObject, QSortFilterProxyModel
 from qgis.PyQt.QtWidgets import QApplication
 from qgis.core import (
     QgsDistanceArea,
@@ -13,25 +7,21 @@ from qgis.core import (
     QgsExpressionContext,
     QgsFeatureRequest,
     QgsProject,
-    QgsVectorLayer
+    QgsVectorLayer,
 )
 from qgis.gui import QgsMapCanvas
 from linking_relation_editor.core.features_model import FeaturesModel
 
 
 class FeaturesModelFilter(QSortFilterProxyModel):
-
     class FeatureFilter(IntEnum):
-        ShowAll = 1,
-        ShowSelected = 2,
-        ShowVisible = 3,
-        ShowEdited = 4,
+        ShowAll = (1,)
+        ShowSelected = (2,)
+        ShowVisible = (3,)
+        ShowEdited = (4,)
         ShowFilteredList = 5
 
-    def __init__(self,
-                 layer: QgsVectorLayer,
-                 canvas: QgsMapCanvas,
-                 parent: QObject = None):
+    def __init__(self, layer: QgsVectorLayer, canvas: QgsMapCanvas, parent: QObject = None):
         super().__init__(parent)
 
         self._layer = layer
@@ -46,8 +36,7 @@ class FeaturesModelFilter(QSortFilterProxyModel):
         if self._canvas:
             self._canvas.extentsChanged.connect(self._extent_changed)
 
-    def set_quick_filter(self,
-                         filter: str):
+    def set_quick_filter(self, filter: str):
         self._quick_filter = filter
         self.invalidateFilter()
 
@@ -58,8 +47,7 @@ class FeaturesModelFilter(QSortFilterProxyModel):
     def quick_filter_active(self):
         return len(self._quick_filter) > 0
 
-    def set_map_filter(self,
-                       map_filter: list):
+    def set_map_filter(self, map_filter: list):
         self._map_filter = map_filter
         self.invalidateFilter()
 
@@ -70,8 +58,7 @@ class FeaturesModelFilter(QSortFilterProxyModel):
     def map_filter_active(self):
         return len(self._map_filter) > 0
 
-    def set_feature_filter(self,
-                           mode):
+    def set_feature_filter(self, mode):
         self._feature_filter = mode
 
         if self._feature_filter == FeaturesModelFilter.FeatureFilter.ShowFilteredList:
@@ -82,9 +69,7 @@ class FeaturesModelFilter(QSortFilterProxyModel):
 
         self.invalidateFilter()
 
-    def set_feature_filter_expression(self,
-                                      expression,
-                                      context):
+    def set_feature_filter_expression(self, expression, context):
         self._feature_filter_expression = expression
         self._feature_filter_expression_context = context
 
@@ -95,13 +80,10 @@ class FeaturesModelFilter(QSortFilterProxyModel):
     def filter_active(self):
         return self.quick_filter_active() or self.map_filter_active()
 
-    def filterAcceptsRow(self,
-                         sourceRow: int,
-                         sourceParent: QModelIndex()):
+    def filterAcceptsRow(self, sourceRow: int, sourceParent: QModelIndex()):
         index = self.sourceModel().index(sourceRow, 0, sourceParent)
 
-        rowFeatureId = self.sourceModel().data(index,
-                                               FeaturesModel.UserRole.FeatureId)
+        rowFeatureId = self.sourceModel().data(index, FeaturesModel.UserRole.FeatureId)
         if not rowFeatureId:
             return False
 
@@ -121,9 +103,11 @@ class FeaturesModelFilter(QSortFilterProxyModel):
             if not editBuffer:
                 return False
 
-            if not (editBuffer.isFeatureAdded(rowFeatureId) or
-                    editBuffer.isFeatureAttributesChanged(rowFeatureId) or
-                    editBuffer.isFeatureGeometryChanged(rowFeatureId)):
+            if not (
+                editBuffer.isFeatureAdded(rowFeatureId)
+                or editBuffer.isFeatureAttributesChanged(rowFeatureId)
+                or editBuffer.isFeatureGeometryChanged(rowFeatureId)
+            ):
                 return False
 
         elif self._feature_filter == FeaturesModelFilter.FeatureFilter.ShowFilteredList:
@@ -137,12 +121,11 @@ class FeaturesModelFilter(QSortFilterProxyModel):
         if len(self._quick_filter) == 0:
             return True
 
-        rowDisplayRole = self.sourceModel().data(index,
-                                                 Qt.DisplayRole)
+        rowDisplayRole = self.sourceModel().data(index, Qt.DisplayRole)
         if not rowDisplayRole:
             return False
 
-        return self._quick_filter in rowDisplayRole
+        return self._quick_filter.lower() in rowDisplayRole.lower()
 
     def _prepare_filtered_features(self):
 
@@ -154,8 +137,6 @@ class FeaturesModelFilter(QSortFilterProxyModel):
         distanceArea = QgsDistanceArea()
         distanceArea.setSourceCrs(self._layer.crs(), QgsProject.instance().transformContext())
         distanceArea.setEllipsoid(QgsProject.instance().ellipsoid())
-
-        fetchGeom = self._feature_filter_expression.needsGeometry()
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
 
@@ -184,8 +165,7 @@ class FeaturesModelFilter(QSortFilterProxyModel):
         if not self._canvas:
             return
 
-        rectangle = self._canvas.mapSettings().mapToLayerCoordinates(self._layer,
-                                                                     self._canvas.extent())
+        rectangle = self._canvas.mapSettings().mapToLayerCoordinates(self._layer, self._canvas.extent())
 
         request = QgsFeatureRequest()
         request.setFilterRect(rectangle)
@@ -198,4 +178,3 @@ class FeaturesModelFilter(QSortFilterProxyModel):
             self._prepare_filtered_by_visible_features()
 
         self.invalidateFilter()
-
