@@ -10,17 +10,7 @@
 
 import os
 from enum import IntEnum
-from qgis.PyQt.QtCore import (
-    Qt,
-    QTimer,
-    QT_VERSION_STR
-)
-from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import (
-    QButtonGroup,
-    QSplitter
-)
-from qgis.PyQt.uic import loadUiType
+
 from qgis.core import (
     Qgis,
     QgsApplication,
@@ -33,32 +23,40 @@ from qgis.core import (
     QgsVectorLayer,
     QgsVectorLayerUtils,
     QgsWkbTypes,
-    metaEnumFromValue
+    metaEnumFromValue,
 )
 from qgis.gui import (
     QgsAbstractRelationEditorWidget,
     QgsDualView,
+    QgsMapToolDigitizeFeature,
     QgsMessageBar,
-    QgsRelationEditorWidget
+    QgsRelationEditorWidget,
 )
-from linking_relation_editor.core.plugin_helper import PluginHelper
-from linking_relation_editor.gui.filtered_selection_manager import FilteredSelectionManager
-from linking_relation_editor.gui.linking_child_manager_dialog import LinkingChildManagerDialog
+from qgis.PyQt.QtCore import QT_VERSION_STR, Qt, QTimer
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtWidgets import QButtonGroup, QSplitter
+from qgis.PyQt.uic import loadUiType
 
-WidgetUi, _ = loadUiType(os.path.join(os.path.dirname(__file__),
-                                      '../ui/linking_relation_editor_widget.ui'))
+from linking_relation_editor.core.plugin_helper import PluginHelper
+from linking_relation_editor.gui.filtered_selection_manager import (
+    FilteredSelectionManager,
+)
+from linking_relation_editor.gui.linking_child_manager_dialog import (
+    LinkingChildManagerDialog,
+)
+
+WidgetUi, _ = loadUiType(os.path.join(os.path.dirname(__file__), "../ui/linking_relation_editor_widget.ui"))
 
 Debug = True
 
 
 class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
-
     class MultiEditFeatureType(IntEnum):
-        Parent = 1,
+        Parent = (1,)
         Child = 2
 
     class MultiEditTreeWidgetRole(IntEnum):
-        FeatureType = Qt.UserRole + 1,
+        FeatureType = (Qt.UserRole + 1,)
         FeatureId = Qt.UserRole + 2
 
     def __init__(self, config, parent):
@@ -139,7 +137,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         self.mViewModeButtonGroup = QButtonGroup(self)
         self.mViewModeButtonGroup.addButton(self.mFormViewButton, QgsDualView.AttributeEditor)
         self.mViewModeButtonGroup.addButton(self.mTableViewButton, QgsDualView.AttributeTable)
-   
+
         # multiedit info label
         self.mMultiEditInfoLabel.setText("")
 
@@ -151,7 +149,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
         self.mStackedWidget.addWidget(self.mDualView)
 
-        if QT_VERSION_STR < '5.15.0':
+        if QT_VERSION_STR < "5.15.0":
             self.mViewModeButtonGroup.buttonClicked.connect(self.setViewModeButton)
         else:
             self.mViewModeButtonGroup.idClicked.connect(self.setViewMode)
@@ -168,18 +166,24 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
         self.mOneToOne = False
 
+        self.mMapToolDigitize = None
+        self.mMessageBarItem = None
+
         # Set initial state for add / remove etc.buttons
         self.updateButtons()
 
     def config(self):
-        return {"buttons": metaEnumFromValue(QgsRelationEditorWidget.Button.AllButtons).valueToKeys(self.visibleButtons()),
-                "show_first_feature": self.mShowFirstFeature,
-                "one_to_one": self.mOneToOne}
+        return {
+            "buttons": metaEnumFromValue(QgsRelationEditorWidget.Button.AllButtons).valueToKeys(self.visibleButtons()),
+            "show_first_feature": self.mShowFirstFeature,
+            "one_to_one": self.mOneToOne,
+        }
 
     def setConfig(self, config):
         metaEnumButtons = metaEnumFromValue(QgsRelationEditorWidget.Button.AllButtons)
-        (self.mButtonsVisibility, ok) = metaEnumButtons.keysToValue(config.get("buttons",
-                                                                               metaEnumButtons.valueToKeys(QgsRelationEditorWidget.Button.AllButtons)))
+        (self.mButtonsVisibility, ok) = metaEnumButtons.keysToValue(
+            config.get("buttons", metaEnumButtons.valueToKeys(QgsRelationEditorWidget.Button.AllButtons))
+        )
         self.mShowFirstFeature = config.get("show_first_feature", True)
         self.mOneToOne = config.get("one_to_one")
         self.updateButtons()
@@ -237,7 +241,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         canLink = False
         canUnlink = False
         spatial = False
-    
+
         if self.relation().isValid():
             toggleEditingButtonEnabled = self.relation().referencingLayer().supportsEditing()
             canAdd = self.relation().referencingLayer().isEditable()
@@ -247,7 +251,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
             canLink = self.relation().referencingLayer().isEditable()
             canUnlink = self.relation().referencingLayer().isEditable()
             spatial = self.relation().referencingLayer().isSpatial()
-    
+
         if self.nmRelation().isValid():
             toggleEditingButtonEnabled |= self.nmRelation().referencedLayer().supportsEditing()
             canAdd = self.nmRelation().referencedLayer().isEditable()
@@ -290,17 +294,35 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         self.mZoomToFeatureButton.setEnabled(selectionNotEmpty)
         self.mToggleEditingButton.setChecked(canEdit)
         self.mSaveEditsButton.setEnabled(canEdit or canLink or canUnlink)
-    
+
         self.mToggleEditingButton.setVisible(not self._layerInSameTransactionGroup)
-    
+
         self.mLinkFeatureButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.Link))
         self.mUnlinkFeatureButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.Unlink))
-        self.mSaveEditsButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.SaveChildEdits) and not self._layerInSameTransactionGroup)
-        self.mAddFeatureButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.AddChildFeature) and not spatial)
-        self.mAddFeatureGeometryButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.AddChildFeature) and bool(self.editorContext().mapCanvas()) and bool(self.editorContext().cadDockWidget()) and spatial)
-        self.mDuplicateFeatureButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.DuplicateChildFeature) and not self.mOneToOne)
-        self.mDeleteFeatureButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.DeleteChildFeature))
-        self.mZoomToFeatureButton.setVisible(bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.ZoomToChildFeature) and bool(self.editorContext().mapCanvas()) and spatial)
+        self.mSaveEditsButton.setVisible(
+            bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.SaveChildEdits)
+            and not self._layerInSameTransactionGroup
+        )
+        self.mAddFeatureButton.setVisible(
+            bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.AddChildFeature) and not spatial
+        )
+        self.mAddFeatureGeometryButton.setVisible(
+            bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.AddChildFeature)
+            and bool(self.editorContext().mapCanvas())
+            and bool(self.editorContext().cadDockWidget())
+            and spatial
+        )
+        self.mDuplicateFeatureButton.setVisible(
+            bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.DuplicateChildFeature) and not self.mOneToOne
+        )
+        self.mDeleteFeatureButton.setVisible(
+            bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.DeleteChildFeature)
+        )
+        self.mZoomToFeatureButton.setVisible(
+            bool(self.mButtonsVisibility & QgsRelationEditorWidget.Button.ZoomToChildFeature)
+            and bool(self.editorContext().mapCanvas())
+            and spatial
+        )
 
         splitter_name = "mAttributeEditorViewSplitter"
         splitter_found = False
@@ -323,10 +345,6 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         if Debug:
             QgsMessageLog.logMessage("updateUiTimeout()")
 
-        # we defer attribute form creation on the first valid feature passed on
-        #if self.attribute_form:
-        #    self.attribute_form.deleteLater()
-
         if not self.relation().isValid() or not self.feature().isValid():
             return
 
@@ -341,9 +359,6 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
     def parentFormValueChanged(self, attribute, newValue):
         if Debug:
             QgsMessageLog.logMessage("parentFormValueChanged()")
-        pass
-        #if self.attribute_form:
-        #    self.attribute_form.parentFormValueChanged(attribute, newValue)
 
     def updateUiSingleEdit(self):
 
@@ -359,7 +374,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
             for feature in self.relation().referencingLayer().getFeatures(request):
                 referenced_request = self.nmRelation().getReferencedFeatureRequest(feature)
                 filter = referenced_request.filterExpression().expression()
-                filters.append('('+filter+')')
+                filters.append("(" + filter + ")")
 
             nmRequest = QgsFeatureRequest()
             nmRequest.setFilterExpression(" OR ".join(filters))
@@ -377,7 +392,6 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
             else:
                 self.relation().referencingLayer().selectByIds(self.mDualView.filteredFeatures())
 
-
     def updateUiMultiEdit(self):
         self.mFormViewButton.setVisible(False)
         self.mTableViewButton.setVisible(False)
@@ -388,7 +402,9 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         multimapChildFeatures = dict()
         self.mMultiEditTreeWidget.clear()
         for featureParent in self.mFeatureList:
-            treeWidgetItem = self.createMultiEditTreeWidgetItem(featureParent, self.relation().referencedLayer(), self.MultiEditFeatureType.Parent)
+            treeWidgetItem = self.createMultiEditTreeWidgetItem(
+                featureParent, self.relation().referencedLayer(), self.MultiEditFeatureType.Parent
+            )
             # Parent feature items are not selectable
             treeWidgetItem.setFlags(Qt.ItemIsEnabled)
             parentTreeWidgetItems.append(treeWidgetItem)
@@ -398,7 +414,9 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
                 if self.nmRelation().isValid():
                     requestFinalChild = self.nmRelation().getReferencedFeatureRequest(featureChild)
                     for featureChildChild in self.nmRelation().referencedLayer().getFeatures(requestFinalChild):
-                        treeWidgetItemChild = self.createMultiEditTreeWidgetItem(featureChildChild, self.nmRelation().referencedLayer(), self.MultiEditFeatureType.Child)
+                        treeWidgetItemChild = self.createMultiEditTreeWidgetItem(
+                            featureChildChild, self.nmRelation().referencedLayer(), self.MultiEditFeatureType.Child
+                        )
                         treeWidgetItem.addChild(treeWidgetItemChild)
                         featureIdsMixedValues.insert(featureChildChild.id())
 
@@ -408,7 +426,9 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
                             multimapChildFeatures[treeWidgetItem] = [featureChildChild.id()]
 
                 else:
-                    treeWidgetItemChild = self.createMultiEditTreeWidgetItem(featureChild, self.relation().referencingLayer(), MultiEditFeatureType.Child)
+                    treeWidgetItemChild = self.createMultiEditTreeWidgetItem(
+                        featureChild, self.relation().referencingLayer(), self.MultiEditFeatureType.Child
+                    )
                     treeWidgetItem.addChild(treeWidgetItemChild)
                     featureIdsMixedValues.insert(featureChild.id())
 
@@ -435,20 +455,22 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
                         break
 
                 if not mixedValues:
-                    iterator = featureIdsMixedValues.remove(featureIdMixedValue)
+                    featureIdsMixedValues.remove(featureIdMixedValue)
                     continue
 
         # Set multiedit info label
         if featureIdsMixedValues.isEmpty():
             icon = QgsApplication.getThemeIcon("/multieditSameValues.svg")
-            self.mMultiEditInfoLabel.setPixmap(icon.pixmap(self.mMultiEditInfoLabel.height(),
-                                               self.mMultiEditInfoLabel.height()))
+            self.mMultiEditInfoLabel.setPixmap(
+                icon.pixmap(self.mMultiEditInfoLabel.height(), self.mMultiEditInfoLabel.height())
+            )
             self.mMultiEditInfoLabel.setToolTip(self.tr("All features in selection have equal relations"))
 
         else:
             icon = QgsApplication.getThemeIcon("/multieditMixedValues.svg")
-            self.mMultiEditInfoLabel.setPixmap(icon.pixmap(self.mMultiEditInfoLabel.height(),
-                                               self.mMultiEditInfoLabel.height()))
+            self.mMultiEditInfoLabel.setPixmap(
+                icon.pixmap(self.mMultiEditInfoLabel.height(), self.mMultiEditInfoLabel.height())
+            )
             self.mMultiEditInfoLabel.setToolTip(self.tr("Some features in selection have different relations"))
             # Set italic font for mixed values
             fontItalic = self.mMultiEditTreeWidget.font()
@@ -466,24 +488,36 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
             return
 
         layer = QgsVectorLayer()
-        if (self.nmRelation().isValid()):
+        if self.nmRelation().isValid():
             layer = self.nmRelation().referencedLayer()
         else:
             layer = self.relation().referencingLayer()
 
+        if not self.mMapToolDigitize:
+            self.mMapToolDigitize = QgsMapToolDigitizeFeature(
+                self.editorContext().mapCanvas(), self.editorContext().cadDockWidget()
+            )
+            self.mMapToolDigitize.setButton(self.mAddFeatureGeometryButton)
+            self.mMapToolDigitize.deactivated.connect(self._mapToolDeactivated)
+
         self.mMapToolDigitize.setLayer(layer)
 
         # window is always on top, so we hide it to digitize without seeing it
-        self.window().setVisible(False)
-        self.setMapTool(self.mMapToolDigitize)
+        if self.window().objectName() != "QgisApp":
+            self.window().setVisible(False)
+        self._setMapTool(self.mMapToolDigitize)
 
         self.mMapToolDigitize.digitizingCompleted.connect(self.onDigitizingCompleted)
-        self.editorContext().mapCanvas().keyPressed.connect(self.onKeyPressed)
+        self.mMapToolDigitize.digitizingCanceled.connect(self.onDigitizingCanceled)
 
         if self.editorContext().mainMessageBar():
-            displayString = QgsVectorLayerUtils.getFeatureDisplayString(layer, self.mFeatureList.first())
-            title = self.tr("Create child feature for parent {0} \"{1}\"").format(self.relation().referencedLayer().name(), displayString)
-            msg = self.tr("Digitize the geometry for the new feature on layer {0}. Press &ltESC&gt to cancel.").format(layer.name())
+            displayString = QgsVectorLayerUtils.getFeatureDisplayString(layer, self.feature())
+            title = self.tr('Create child feature for parent {0} "{1}"').format(
+                self.relation().referencedLayer().name(), displayString
+            )
+            msg = self.tr("Digitize the geometry for the new feature on layer {0}. Press &ltESC&gt to cancel.").format(
+                layer.name()
+            )
             self.mMessageBarItem = QgsMessageBar.createMessage(title, msg, self)
             self.editorContext().mainMessageBar().pushItem(self.mMessageBarItem)
 
@@ -494,7 +528,9 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         layer = self.relation().referencingLayer()
 
         for feature in layer.getFeatures(QgsFeatureRequest().setFilterFids(fids)):
-            QgsVectorLayerUtils.duplicateFeature(layer, feature, QgsProject.instance(), QgsVectorLayerUtils.QgsDuplicateFeatureContext)
+            QgsVectorLayerUtils.duplicateFeature(
+                layer, feature, QgsProject.instance(), QgsVectorLayerUtils.QgsDuplicateFeatureContext
+            )
 
         self.relatedFeaturesChanged()
 
@@ -514,25 +550,26 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
             layer = self.relation().referencingLayer()
 
-        relationEditorLinkChildManagerDialog = LinkingChildManagerDialog(layer,
-                                                                         self.relation().referencedLayer(),
-                                                                         self.feature(),
-                                                                         self.relation(),
-                                                                         self.nmRelation(),
-                                                                         self.editorContext(),
-                                                                         self)
+        relationEditorLinkChildManagerDialog = LinkingChildManagerDialog(
+            layer,
+            self.relation().referencedLayer(),
+            self.feature(),
+            self.relation(),
+            self.nmRelation(),
+            self.editorContext(),
+            self,
+        )
         relationEditorLinkChildManagerDialog.accepted.connect(self._relationEditorLinkChildManagerDialogAccepted)
         relationEditorLinkChildManagerDialog.show()
 
-    def _linkFeatures(self,
-                      featureIds):
+    def _linkFeatures(self, featureIds):
 
         if len(featureIds) == 0:
             return
 
         if self.nmRelation().isValid():
             # only normal relations support m:n relation
-            assert(self.nmRelation().type() == QgsRelation.Normal)
+            assert self.nmRelation().type() == QgsRelation.Normal
 
             # Fields of the linking table
             fields = self.relation().referencingLayer().fields()
@@ -541,14 +578,23 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
             if self.relation().type() == QgsRelation.Generated:
                 polyRel = self.relation().polymorphicRelation()
-                assert(polyRel.isValid())
+                assert polyRel.isValid()
 
-                linkAttributes.insert(fields.indexFromName(polyRel.referencedLayerField()),
-                                      polyRel.layerRepresentation(self.relation().referencedLayer()))
+                linkAttributes.insert(
+                    fields.indexFromName(polyRel.referencedLayerField()),
+                    polyRel.layerRepresentation(self.relation().referencedLayer()),
+                )
 
             linkFeatureDataList = []
-            for relatedFeature in self.nmRelation().referencedLayer().getFeatures(QgsFeatureRequest().setFilterFids(featureIds)
-                                                                                                     .setSubsetOfAttributes(self.nmRelation().referencedFields())):
+            for relatedFeature in (
+                self.nmRelation()
+                .referencedLayer()
+                .getFeatures(
+                    QgsFeatureRequest()
+                    .setFilterFids(featureIds)
+                    .setSubsetOfAttributes(self.nmRelation().referencedFields())
+                )
+            ):
                 for editFeature in self._featureList():
                     for referencingField, referencedField in self.relation().fieldPairs().items():
                         index = fields.indexOf(referencingField)
@@ -563,9 +609,9 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
             # Expression context for the linking table
             context = self.relation().referencingLayer().createExpressionContext()
 
-            linkFeaturesList = QgsVectorLayerUtils.createFeatures(self.relation().referencingLayer(),
-                                                                  linkFeatureDataList,
-                                                                  context)
+            linkFeaturesList = QgsVectorLayerUtils.createFeatures(
+                self.relation().referencingLayer(), linkFeatureDataList, context
+            )
 
             self.relation().referencingLayer().addFeatures(linkFeaturesList)
             ids = []
@@ -588,16 +634,16 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
                 if self.relation().type() == QgsRelation.Generated:
                     polyRel = self.relation().polymorphicRelation()
 
-                    assert(polyRel.isValid())
+                    assert polyRel.isValid()
 
-                    self.relation().referencingLayer().changeAttributeValue(fid,
-                                                                            referencingLayer.fields().indexFromName(polyRel.referencedLayerField()),
-                                                                            polyRel.layerRepresentation(self.relation().referencedLayer()))
+                    self.relation().referencingLayer().changeAttributeValue(
+                        fid,
+                        referencingLayer.fields().indexFromName(polyRel.referencedLayerField()),
+                        polyRel.layerRepresentation(self.relation().referencedLayer()),
+                    )
 
                 for key, value in keys.items():
-                    referencingLayer.changeAttributeValue(fid,
-                                                          key,
-                                                          value)
+                    referencingLayer.changeAttributeValue(fid, key, value)
 
         self.updateUi()
 
@@ -612,7 +658,10 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         # but only if we are not deselecting.
         if selectedItems.size() == 1 and self.mMultiEditPreviousSelectedItems.size() <= 1:
             selectedItem = selectedItems[0]
-            if selectedItem.data(0, self.MultiEditTreeWidgetRole.FeatureType).toInt() == self.MultiEditFeatureType.Child:
+            if (
+                selectedItem.data(0, self.MultiEditTreeWidgetRole.FeatureType).toInt()
+                == self.MultiEditFeatureType.Child
+            ):
                 self.mMultiEditTreeWidget.blockSignals(True)
 
                 featureIdSelectedItem = selectedItem.data(0, self.MultiEditTreeWidgetRole.FeatureId).toInt()
@@ -620,7 +669,10 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
                 for i in range(self.mMultiEditTreeWidget.childCount()):
                     treeWidgetItem = self.mMultiEditTreeWidget.child(i)
 
-                    if treeWidgetItem.data(0, self.MultiEditTreeWidgetRole.FeatureType).toInt() != self.MultiEditFeatureType.Child:
+                    if (
+                        treeWidgetItem.data(0, self.MultiEditTreeWidgetRole.FeatureType).toInt()
+                        != self.MultiEditFeatureType.Child
+                    ):
                         continue
 
                     featureIdCurrentItem = treeWidgetItem.data(0, self.MultiEditTreeWidgetRole.FeatureId).toInt()
@@ -643,7 +695,10 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         if self._multiEditModeActive():
             featureIds = set()
             for treeWidgetItem in self.mMultiEditTreeWidget.selectedItems():
-                if treeWidgetItem.data(0, self.MultiEditTreeWidgetRole.FeatureType).toInt() != self.MultiEditFeatureType.Child:
+                if (
+                    treeWidgetItem.data(0, self.MultiEditTreeWidgetRole.FeatureType).toInt()
+                    != self.MultiEditFeatureType.Child
+                ):
                     continue
 
                 featureIds.insert(treeWidgetItem.data(0, self.MultiEditTreeWidgetRole.FeatureId).toLongLong())
@@ -659,7 +714,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         mode = QgsDualView.AttributeEditor
         if button == self.mTableViewButton:
             mode = QgsDualView.AttributeTable
-        
+
         self.mDualView.setView(mode)
         self.mViewMode = mode
 
@@ -703,20 +758,25 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
         self._layerInSameTransactionGroup = False
         connectionString = PluginHelper.connectionString(self.relation().referencedLayer().source())
-        transactionGroup = QgsProject.instance().transactionGroup(self.relation().referencedLayer().providerType(),
-                                                                  connectionString)
+        transactionGroup = QgsProject.instance().transactionGroup(
+            self.relation().referencedLayer().providerType(), connectionString
+        )
 
         if transactionGroup is None:
             return
 
         if self.nmRelation().isValid():
-            if (self.relation().referencedLayer() in transactionGroup.layers() and
-               self.relation().referencingLayer() in transactionGroup.layers() and
-               self.nmRelation().referencedLayer() in transactionGroup.layers()):
+            if (
+                self.relation().referencedLayer() in transactionGroup.layers()
+                and self.relation().referencingLayer() in transactionGroup.layers()
+                and self.nmRelation().referencedLayer() in transactionGroup.layers()
+            ):
                 self._layerInSameTransactionGroup = True
         else:
-            if (self.relation().referencedLayer() in transactionGroup.layers() and
-               self.relation().referencingLayer() in transactionGroup.layers()):
+            if (
+                self.relation().referencedLayer() in transactionGroup.layers()
+                and self.relation().referencingLayer() in transactionGroup.layers()
+            ):
                 self._layerInSameTransactionGroup = True
 
     def _multiEditModeActive(self):
@@ -738,3 +798,35 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         self.unlinkFeatures(relationEditorLinkChildManagerDialog.get_feature_ids_to_unlink())
         self._linkFeatures(relationEditorLinkChildManagerDialog.get_feature_ids_to_link())
         relationEditorLinkChildManagerDialog.deleteLater()
+
+    def _setMapTool(self, mapTool):
+        mapCanvas = self.editorContext().mapCanvas()
+
+        mapCanvas.setMapTool(mapTool)
+        mapCanvas.window().raise_()
+        mapCanvas.activateWindow()
+        mapCanvas.setFocus()
+
+    def unsetMapTool(self):
+        mapCanvas = self.editorContext().mapCanvas()
+
+        # This will call mapToolDeactivated
+        mapCanvas.unsetMapTool(self.mMapToolDigitize)
+
+    def _mapToolDeactivated(self):
+        if self.editorContext().mainMessageBar() and self.mMessageBarItem:
+            self.editorContext().mainMessageBar().popWidget(self.mMessageBarItem)
+        self.mMessageBarItem = None
+
+    def onDigitizingCompleted(self, feature):
+        self.addFeature(feature.geometry())
+        self.digitizingFinished()
+
+    def onDigitizingCanceled(self):
+        self.digitizingFinished()
+
+    def digitizingFinished(self):
+        self.window().setVisible(True)
+        self.window().raise_()
+        self.window().activateWindow()
+        self.unsetMapTool()
