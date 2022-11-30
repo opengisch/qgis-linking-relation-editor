@@ -9,55 +9,45 @@
 # -----------------------------------------------------------
 
 import os
-from enum import IntEnum
-from qgis.PyQt.QtCore import (
-    Qt,
-    QItemSelectionModel,
-    QTimer
-)
-from qgis.PyQt.QtWidgets import (
-    QAction,
-    QDialog,
-    QMessageBox
-)
-from qgis.PyQt.uic import loadUiType
+
 from qgis.core import (
     QgsApplication,
     QgsFeature,
     QgsFeatureRequest,
     QgsRelation,
     QgsVectorLayer,
-    QgsVectorLayerCache,
-    QgsVectorLayerUtils
+    QgsVectorLayerUtils,
 )
 from qgis.gui import (
     QgsAttributeEditorContext,
-    QgsFilterLineEdit,
-    QgsIdentifyMenu,
     QgsHighlight,
-    QgsMessageBar
+    QgsIdentifyMenu,
+    QgsMessageBar,
 )
+from qgis.PyQt.QtCore import Qt, QTimer
+from qgis.PyQt.QtWidgets import QAction, QDialog, QMessageBox
+from qgis.PyQt.uic import loadUiType
 from qgis.utils import iface
+
 from linking_relation_editor.core.features_model import FeaturesModel
 from linking_relation_editor.core.features_model_filter import FeaturesModelFilter
 from linking_relation_editor.gui.feature_filter_widget import FeatureFilterWidget
 from linking_relation_editor.gui.map_tool_select_rectangle import MapToolSelectRectangle
 
-
-WidgetUi, _ = loadUiType(os.path.join(os.path.dirname(__file__),
-                                      '../ui/linking_child_manager_dialog.ui'))
+WidgetUi, _ = loadUiType(os.path.join(os.path.dirname(__file__), "../ui/linking_child_manager_dialog.ui"))
 
 
 class LinkingChildManagerDialog(QDialog, WidgetUi):
-
-    def __init__(self,
-                 layer: QgsVectorLayer,
-                 parentLayer: QgsVectorLayer,
-                 parentFeature: QgsFeature,
-                 relation: QgsRelation,
-                 nmRelation: QgsRelation,
-                 editorContext: QgsAttributeEditorContext,
-                 parent=None):
+    def __init__(
+        self,
+        layer: QgsVectorLayer,
+        parentLayer: QgsVectorLayer,
+        parentFeature: QgsFeature,
+        relation: QgsRelation,
+        nmRelation: QgsRelation,
+        editorContext: QgsAttributeEditorContext,
+        parent=None,
+    ):
         super().__init__(parent)
 
         self._layer = layer
@@ -69,8 +59,7 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
 
         self._mapToolSelect = None
         if self._canvas():
-            self._mapToolSelect = MapToolSelectRectangle(self._canvas(),
-                                                         self._layer)
+            self._mapToolSelect = MapToolSelectRectangle(self._canvas(), self._layer)
 
         self._highlight = list()
 
@@ -78,25 +67,29 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
         self.setupUi(self)
 
         # Actions
-        self._actionLinkSelected = QAction(QgsApplication.getThemeIcon("/mActionArrowRight.svg"),
-                                           self.tr("Link selected"))
-        self._actionUnlinkSelected = QAction(QgsApplication.getThemeIcon("/mActionArrowLeft.svg"),
-                                             self.tr("Unlink selected"))
-        self._actionLinkAll = QAction(QgsApplication.getThemeIcon("/mActionDoubleArrowRight.svg"),
-                                      self.tr("Link all"))
-        self._actionUnlinkAll = QAction(QgsApplication.getThemeIcon("/mActionDoubleArrowLeft.svg"),
-                                        self.tr("Unlink all"))
-        self._actionQuickFilter = QAction(QgsApplication.getThemeIcon("/mIndicatorFilter.svg"),
-                                          self.tr("Quick filter"))
+        self._actionLinkSelected = QAction(
+            QgsApplication.getThemeIcon("/mActionArrowRight.svg"), self.tr("Link selected")
+        )
+        self._actionUnlinkSelected = QAction(
+            QgsApplication.getThemeIcon("/mActionArrowLeft.svg"), self.tr("Unlink selected")
+        )
+        self._actionLinkAll = QAction(QgsApplication.getThemeIcon("/mActionDoubleArrowRight.svg"), self.tr("Link all"))
+        self._actionUnlinkAll = QAction(
+            QgsApplication.getThemeIcon("/mActionDoubleArrowLeft.svg"), self.tr("Unlink all")
+        )
+        self._actionQuickFilter = QAction(QgsApplication.getThemeIcon("/mIndicatorFilter.svg"), self.tr("Quick filter"))
         self._actionQuickFilter.setCheckable(True)
-        self._actionMapFilter = QAction(QgsApplication.getThemeIcon("/mActionMapIdentification.svg"),
-                                        self.tr("Select features on map"))
+        self._actionMapFilter = QAction(
+            QgsApplication.getThemeIcon("/mActionMapIdentification.svg"), self.tr("Select features on map")
+        )
         self._actionMapFilter.setCheckable(True)
-        self._actionZoomToSelectedLeft = QAction(QgsApplication.getThemeIcon("/mActionZoomToSelected.svg"),
-                                                 self.tr("Zoom To Feature(s)"))
+        self._actionZoomToSelectedLeft = QAction(
+            QgsApplication.getThemeIcon("/mActionZoomToSelected.svg"), self.tr("Zoom To Feature(s)")
+        )
         self._actionZoomToSelectedLeft.setToolTip(self.tr("Zoom to selected child feature(s)"))
-        self._actionZoomToSelectedRight = QAction(QgsApplication.getThemeIcon("/mActionZoomToSelected.svg"),
-                                                  self.tr("Zoom To Feature(s)"))
+        self._actionZoomToSelectedRight = QAction(
+            QgsApplication.getThemeIcon("/mActionZoomToSelected.svg"), self.tr("Zoom To Feature(s)")
+        )
         self._actionZoomToSelectedRight.setToolTip(self.tr("Zoom to selected child feature(s)"))
 
         # Tool buttons
@@ -133,44 +126,39 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
             self.mFeaturesListViewLeft.addAction(self._actionZoomToSelectedLeft)
             self.mFeaturesListViewRight.addAction(self._actionZoomToSelectedRight)
 
-        displayString = QgsVectorLayerUtils.getFeatureDisplayString(self._parentLayer,
-                                                                    self._parentFeature)
-        self.setWindowTitle(self.tr("Manage linked features for parent {0} \"{1}\"").format(self._parentLayer.name(),
-                                                                                            displayString))
+        displayString = QgsVectorLayerUtils.getFeatureDisplayString(self._parentLayer, self._parentFeature)
+        self.setWindowTitle(
+            self.tr('Manage linked features for parent {0} "{1}"').format(self._parentLayer.name(), displayString)
+        )
 
         self.mLayerNameLabel.setText(self._layer.name())
 
         linkedFeatures, unlinkedFeatures, request = self._getAllFeatures()
 
-        self._featuresModelLeft = FeaturesModel(unlinkedFeatures,
-                                                FeaturesModel.FeatureState.Unlinked,
-                                                self._layer,
-                                                self)
+        self._featuresModelLeft = FeaturesModel(
+            unlinkedFeatures, FeaturesModel.FeatureState.Unlinked, self._layer, self
+        )
 
-        self._featuresModelFilterLeft = FeaturesModelFilter(self._layer,
-                                                            self._canvas(),
-                                                            self)
+        self._featuresModelFilterLeft = FeaturesModelFilter(self._layer, self._canvas(), self)
         self._featuresModelFilterLeft.setSourceModel(self._featuresModelLeft)
 
         self.mFeaturesListViewLeft.setModel(self._featuresModelFilterLeft)
 
-        self._featuresModelRight = FeaturesModel(linkedFeatures,
-                                                 FeaturesModel.FeatureState.Linked,
-                                                 self._layer,
-                                                 self)
+        self._featuresModelRight = FeaturesModel(linkedFeatures, FeaturesModel.FeatureState.Linked, self._layer, self)
         self.mFeaturesListViewRight.setModel(self._featuresModelRight)
 
         self.mQuickFilterLineEdit.setVisible(False)
 
         self._feature_filter_widget = FeatureFilterWidget(self)
-        self.mFooterHBoxLayout.insertWidget(0,
-                                            self._feature_filter_widget)
+        self.mFooterHBoxLayout.insertWidget(0, self._feature_filter_widget)
         if iface:  # TODO how to use iface in tests?
-            self._feature_filter_widget.init(self._layer,
-                                             self._editorContext,
-                                             self._featuresModelFilterLeft,
-                                             iface.messageBar(),
-                                             QgsMessageBar.defaultMessageTimeout())
+            self._feature_filter_widget.init(
+                self._layer,
+                self._editorContext,
+                self._featuresModelFilterLeft,
+                iface.messageBar(),
+                QgsMessageBar.defaultMessageTimeout(),
+            )
             self._feature_filter_widget.filterShowAll()
 
         # Signal slots
@@ -233,13 +221,17 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
                 linkedFeatures[documentFeature.id()] = documentFeature
 
         unlinkedFeatures = list(layer.getFeatures())
-        unlinkedFeatures = [unlinkedFeature for unlinkedFeature in unlinkedFeatures if unlinkedFeature.id() not in linkedFeatures]
+        unlinkedFeatures = [
+            unlinkedFeature for unlinkedFeature in unlinkedFeatures if unlinkedFeature.id() not in linkedFeatures
+        ]
 
         return linkedFeatures.values(), unlinkedFeatures, request
 
     def _linkSelected(self):
         selected_indexes = self.mFeaturesListViewLeft.selectedIndexes()[:]
-        source_model_indexes = [self._featuresModelFilterLeft.mapToSource(model_index) for model_index in selected_indexes]
+        source_model_indexes = [
+            self._featuresModelFilterLeft.mapToSource(model_index) for model_index in selected_indexes
+        ]
         featuresModelElements = self._featuresModelLeft.take_items(source_model_indexes)
 
         if not featuresModelElements:
@@ -273,7 +265,10 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
     def _linkAll(self):
         featuresModelElements = []
         if self._featuresModelFilterLeft.filter_active():
-            source_model_indexes = [self._featuresModelFilterLeft.mapToSource(self._featuresModelFilterLeft.index(row, 0)) for row in range(self._featuresModelFilterLeft.rowCount())]
+            source_model_indexes = [
+                self._featuresModelFilterLeft.mapToSource(self._featuresModelFilterLeft.index(row, 0))
+                for row in range(self._featuresModelFilterLeft.rowCount())
+            ]
             featuresModelElements = self._featuresModelLeft.take_items(source_model_indexes)
 
         else:
@@ -304,8 +299,7 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
 
         self._featuresModelLeft.add_features_model_items(featuresModelElements)
 
-    def _quick_filter_triggered(self,
-                                checked: bool):
+    def _quick_filter_triggered(self, checked: bool):
         self.mQuickFilterLineEdit.setVisible(checked)
         if checked:
             self.mQuickFilterLineEdit.setFocus()
@@ -313,12 +307,10 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
         else:
             self._featuresModelFilterLeft.clear_quick_filter()
 
-    def _quick_filter_value_changed(self,
-                                    value: str):
+    def _quick_filter_value_changed(self, value: str):
         self._featuresModelFilterLeft.set_quick_filter(value)
 
-    def _map_filter_triggered(self,
-                              checked: bool):
+    def _map_filter_triggered(self, checked: bool):
         if not self._canvas():
             return
 
@@ -326,12 +318,11 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
             iface.actionSelect().trigger()
             self._setMapTool(self._mapToolSelect)
 
-            title = self.tr("Relation {0} for {1}.").format(self._relation.name(),
-                                                            self._parentLayer.name())
-            msg = self.tr("Select features of {0} to be considered. Press &lt;ESC&gt; to cancel.").format(self._layer.name())
-            self._messageBarItem = QgsMessageBar.createMessage(title,
-                                                               msg,
-                                                               self)
+            title = self.tr("Relation {0} for {1}.").format(self._relation.name(), self._parentLayer.name())
+            msg = self.tr("Select features of {0} to be considered. Press &lt;ESC&gt; to cancel.").format(
+                self._layer.name()
+            )
+            self._messageBarItem = QgsMessageBar.createMessage(title, msg, self)
             iface.messageBar().pushItem(self._messageBarItem)
 
         else:
@@ -343,14 +334,12 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
 
         selectedFeatureIds = []
         for modelIndex in self.mFeaturesListViewLeft.selectedIndexes():
-            selectedFeatureIds.append(self._featuresModelFilterLeft.data(modelIndex,
-                                                                         FeaturesModel.UserRole.FeatureId))
+            selectedFeatureIds.append(self._featuresModelFilterLeft.data(modelIndex, FeaturesModel.UserRole.FeatureId))
 
         if len(selectedFeatureIds) == 0:
             return
 
-        self._canvas().zoomToFeatureIds(self._layer,
-                                        selectedFeatureIds)
+        self._canvas().zoomToFeatureIds(self._layer, selectedFeatureIds)
 
     def _zoomToSelectedRight(self):
         if not self._canvas():
@@ -358,17 +347,14 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
 
         selectedFeatureIds = []
         for modelIndex in self.mFeaturesListViewRight.selectedIndexes():
-            selectedFeatureIds.append(self._featuresModelRight.data(modelIndex,
-                                                                    FeaturesModel.UserRole.FeatureId))
+            selectedFeatureIds.append(self._featuresModelRight.data(modelIndex, FeaturesModel.UserRole.FeatureId))
 
         if len(selectedFeatureIds) == 0:
             return
 
-        self._canvas().zoomToFeatureIds(self._layer,
-                                        selectedFeatureIds)
+        self._canvas().zoomToFeatureIds(self._layer, selectedFeatureIds)
 
-    def _map_tool_select_finished(self,
-                                  features: list):
+    def _map_tool_select_finished(self, features: list):
 
         self.mFeaturesListViewLeft.selectionModel().reset()
 
@@ -387,9 +373,11 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
             self._highlightFeature(feature)
 
         if already_linked_features:
-            QMessageBox.warning(self._canvas().window(),
-                                self.tr("Feature already linked"),
-                                self.tr("Some feature(s) are already linked: '{0}'").format("', '".join(already_linked_features)))
+            QMessageBox.warning(
+                self._canvas().window(),
+                self.tr("Feature already linked"),
+                self.tr("Some feature(s) are already linked: '{0}'").format("', '".join(already_linked_features)),
+            )
 
         if map_filter_features:
             self._featuresModelFilterLeft.set_map_filter(map_filter_features)
@@ -399,8 +387,7 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
         #  self.show()
         self._unsetMapTool()
 
-    def _setMapTool(self,
-                    mapTool):
+    def _setMapTool(self, mapTool):
         #  self.hide() TODO Is it possible to hide the parent feature form too?
         self._canvas().setMapTool(mapTool)
         self._canvas().window().raise_()
@@ -418,8 +405,7 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
 
         iface.messageBar().popWidget(self._messageBarItem)
 
-    def _highlightFeature(self,
-                          feature: QgsFeature):
+    def _highlightFeature(self, feature: QgsFeature):
 
         if not self._canvas():
             return
@@ -431,20 +417,17 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
             return
 
         # Highlight selected features shortly
-        highlight = QgsHighlight(self._canvas(),
-                                 feature,
-                                 self._layer)
+        highlight = QgsHighlight(self._canvas(), feature, self._layer)
         QgsIdentifyMenu.styleHighlight(highlight)
         highlight.show()
         self._highlight.append(highlight)
-        QTimer.singleShot(3000,
-                          self._deleteHighlight)
+        QTimer.singleShot(3000, self._deleteHighlight)
 
     def _deleteHighlight(self):
         if not self._highlight:
             return
 
-        highlight = self._highlight[0].hide()
+        self._highlight[0].hide()
         del self._highlight[0]
 
     def _canvas(self):

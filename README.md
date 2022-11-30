@@ -10,4 +10,3 @@ This plugin provides a relation editor widget with an alternative linking dialog
 In the attribute form configuration select `Linking relation editor widget` as widget type for a relation:
 
 ![image](https://user-images.githubusercontent.com/9881900/204229315-1f77d01f-1c00-4574-8ea5-0bcf0e804e6f.png)
-

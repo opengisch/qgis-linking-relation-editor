@@ -1,23 +1,15 @@
-
-
+from qgis.core import QgsFeature, QgsProject, QgsRelation, QgsVectorLayer
 from qgis.PyQt.QtWidgets import QWidget
-from qgis.core import (
-    QgsFeature,
-    QgsProject,
-    QgsRelation,
-    QgsVectorLayer
+from qgis.testing import start_app, unittest
+
+from linking_relation_editor.gui.linking_relation_editor_widget_factory import (
+    LinkingRelationEditorWidget,
 )
-from qgis.testing import (
-    unittest,
-    start_app
-)
-from linking_relation_editor.gui.linking_relation_editor_widget_factory import LinkingRelationEditorWidget
 
 start_app()
 
 
 class TestLinkingRelationEditorWidgetFactory(unittest.TestCase):
-
     def setUp(self):
         # create layer
         self.mLayer1 = QgsVectorLayer(("LineString?field=pk:int&field=fk:int"), ("vl1"), ("memory"))
@@ -28,7 +20,9 @@ class TestLinkingRelationEditorWidgetFactory(unittest.TestCase):
         self.mLayer2.setDisplayExpression(("'Layer2-' || pk"))
         QgsProject.instance().addMapLayer(self.mLayer2, False)
 
-        self.mLayerJoin = QgsVectorLayer(("LineString?field=pk:int&field=fk_layer1:int&field=fk_layer2:int"), ("join_layer"), ("memory"))
+        self.mLayerJoin = QgsVectorLayer(
+            ("LineString?field=pk:int&field=fk_layer1:int&field=fk_layer2:int"), ("join_layer"), ("memory")
+        )
         self.mLayerJoin.setDisplayExpression(("'LayerJoin-' || pk"))
         QgsProject.instance().addMapLayer(self.mLayerJoin, False)
 
@@ -127,10 +121,8 @@ class TestLinkingRelationEditorWidgetFactory(unittest.TestCase):
     def test_InstantiateRelation1N(self):
         # Init a relation editor widget
         parentWidget = QWidget()
-        relationEditorWidget = LinkingRelationEditorWidget({},
-                                                           parentWidget)
-        relationEditorWidget.setRelations(self.mRelation,
-                                          QgsRelation())
+        relationEditorWidget = LinkingRelationEditorWidget({}, parentWidget)
+        relationEditorWidget.setRelations(self.mRelation, QgsRelation())
 
         for feature in self.mLayer2.getFeatures():
             relationEditorWidget.setFeature(feature)
@@ -143,10 +135,8 @@ class TestLinkingRelationEditorWidgetFactory(unittest.TestCase):
 
         # Init a relation editor widget
         parentWidget = QWidget()
-        relationEditorWidget = LinkingRelationEditorWidget({},
-                                                           parentWidget)
-        relationEditorWidget.setRelations(self.mRelation,
-                                          QgsRelation())
+        relationEditorWidget = LinkingRelationEditorWidget({}, parentWidget)
+        relationEditorWidget.setRelations(self.mRelation, QgsRelation())
 
         for feature in self.mLayer2.getFeatures():
             relationEditorWidget.setFeature(feature)
@@ -160,10 +150,8 @@ class TestLinkingRelationEditorWidgetFactory(unittest.TestCase):
     def test_InstantiateRelationNM(self):
         # Init a relation editor widget
         parentWidget = QWidget()
-        relationEditorWidget = LinkingRelationEditorWidget({},
-                                                           parentWidget)
-        relationEditorWidget.setRelations(self.mRelation1N,
-                                          self.mRelationNM)
+        relationEditorWidget = LinkingRelationEditorWidget({}, parentWidget)
+        relationEditorWidget.setRelations(self.mRelation1N, self.mRelationNM)
 
         for feature in self.mLayer1.getFeatures():
             relationEditorWidget.setFeature(feature)
@@ -175,10 +163,8 @@ class TestLinkingRelationEditorWidgetFactory(unittest.TestCase):
     def test_InstantiateRelationNM_linkFeatures(self):
         # Init a relation editor widget
         parentWidget = QWidget()
-        relationEditorWidget = LinkingRelationEditorWidget({},
-                                                           parentWidget)
-        relationEditorWidget.setRelations(self.mRelation1N,
-                                          self.mRelationNM)
+        relationEditorWidget = LinkingRelationEditorWidget({}, parentWidget)
+        relationEditorWidget.setRelations(self.mRelation1N, self.mRelationNM)
 
         for feature in self.mLayer1.getFeatures():
             relationEditorWidget.setFeature(feature)

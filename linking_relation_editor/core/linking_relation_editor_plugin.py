@@ -9,9 +9,14 @@
 # -----------------------------------------------------------
 
 import os
-from qgis.PyQt.QtCore import QCoreApplication, QTranslator, QObject, QLocale, QSettings
+
 from qgis.gui import QgisInterface, QgsGui
-from linking_relation_editor.gui.linking_relation_editor_widget_factory import LinkingRelationEditorWidgetFactory, WIDGET_TYPE
+from qgis.PyQt.QtCore import QCoreApplication, QLocale, QObject, QSettings, QTranslator
+
+from linking_relation_editor.gui.linking_relation_editor_widget_factory import (
+    WIDGET_TYPE,
+    LinkingRelationEditorWidgetFactory,
+)
 
 DEBUG = True
 
@@ -25,10 +30,10 @@ class LinkingRelationEditorPlugin(QObject):
         self.iface = iface
 
         # initialize translation
-        qgis_locale = QLocale(QSettings().value('locale/userLocale'))
-        locale_path = os.path.join(os.path.dirname(__file__), 'i18n')
+        qgis_locale = QLocale(QSettings().value("locale/userLocale"))
+        locale_path = os.path.join(os.path.dirname(__file__), "i18n")
         self.translator = QTranslator()
-        self.translator.load(qgis_locale, 'actions_for_relations', '_', locale_path)
+        self.translator.load(qgis_locale, "actions_for_relations", "_", locale_path)
         QCoreApplication.installTranslator(self.translator)
 
     def initGui(self):
@@ -36,4 +41,3 @@ class LinkingRelationEditorPlugin(QObject):
 
     def unload(self):
         QgsGui.relationWidgetRegistry().removeRelationWidget(WIDGET_TYPE)
-

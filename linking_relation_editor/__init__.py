@@ -14,5 +14,8 @@ def classFactory(iface):
     :param iface: A QGIS interface instance.
     :type iface: QgsInterface
     """
-    from linking_relation_editor.core.linking_relation_editor_plugin import LinkingRelationEditorPlugin
+    from linking_relation_editor.core.linking_relation_editor_plugin import (
+        LinkingRelationEditorPlugin,
+    )
+
     return LinkingRelationEditorPlugin(iface)

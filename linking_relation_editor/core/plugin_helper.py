@@ -12,14 +12,13 @@ from qgis.core import QgsDataSourceUri
 
 
 class PluginHelper(object):
-
     @staticmethod
     def removeLayerIdOrName(layerUri):
         layerUriStripped = str()
         for toRemove in ["|layername=", "|layerid="]:
             pos = layerUri.find(toRemove)
             if pos >= 0:
-                end = layerUri.find('|', pos + 1)
+                end = layerUri.find("|", pos + 1)
                 if end >= 0:
                     layerUriStripped = layerUri[pos:end]
                 else:
