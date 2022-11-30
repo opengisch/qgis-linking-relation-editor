@@ -557,6 +557,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
             self.relation(),
             self.nmRelation(),
             self.editorContext(),
+            self.mOneToOne,
             self,
         )
         relationEditorLinkChildManagerDialog.accepted.connect(self._relationEditorLinkChildManagerDialogAccepted)

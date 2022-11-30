@@ -46,6 +46,7 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
         relation: QgsRelation,
         nmRelation: QgsRelation,
         editorContext: QgsAttributeEditorContext,
+        oneToOne: bool,
         parent=None,
     ):
         super().__init__(parent)
@@ -56,6 +57,7 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
         self._relation = relation
         self._nmRelation = nmRelation
         self._editorContext = editorContext
+        self._oneToOne = oneToOne
 
         self._mapToolSelect = None
         if self._canvas():
@@ -229,6 +231,16 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
 
     def _linkSelected(self):
         selected_indexes = self.mFeaturesListViewLeft.selectedIndexes()[:]
+
+        if self._oneToOne:
+            if self._featuresModelRight.rowCount() >= 1 or len(selected_indexes) > 1:
+                QMessageBox.critical(
+                    self._canvas().window(),
+                    self.tr("One to one"),
+                    self.tr("In one to one mode only one feature at the time can be linked."),
+                )
+                return
+
         source_model_indexes = [
             self._featuresModelFilterLeft.mapToSource(model_index) for model_index in selected_indexes
         ]
@@ -263,6 +275,15 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
         self._featuresModelLeft.add_features_model_items(featuresModelElements)
 
     def _linkAll(self):
+        if self._oneToOne:
+            if self._featuresModelRight.rowCount() >= 1 or self._featuresModelFilterLeft.rowCount() > 1:
+                QMessageBox.critical(
+                    self._canvas().window(),
+                    self.tr("One to one"),
+                    self.tr("In one to one mode only one feature at the time can be linked."),
+                )
+                return
+
         featuresModelElements = []
         if self._featuresModelFilterLeft.filter_active():
             source_model_indexes = [
