@@ -8,12 +8,10 @@
 #
 # -----------------------------------------------------------
 
-from qgis.core import QgsVectorLayer
 from qgis.gui import QgsIFeatureSelectionManager
 
 
 class VectorLayerSelectionManager(QgsIFeatureSelectionManager):
-
     def __init__(self, layer, parent):
         super().__init__(parent)
 

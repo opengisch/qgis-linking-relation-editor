@@ -1,23 +1,14 @@
+from qgis.core import QgsFeature, QgsProject, QgsRelation, QgsVectorLayer
+from qgis.testing import start_app, unittest
 
-import os
-from qgis.PyQt.QtCore import QTemporaryDir
-from qgis.core import (
-    QgsFeature,
-    QgsProject,
-    QgsRelation,
-    QgsVectorLayer
+from linking_relation_editor.gui.linking_child_manager_dialog import (
+    LinkingChildManagerDialog,
 )
-from qgis.testing import (
-    unittest,
-    start_app
-)
-from linking_relation_editor.gui.linking_child_manager_dialog import LinkingChildManagerDialog
 
 start_app()
 
 
 class TestLinkingChildManagerDialog(unittest.TestCase):
-
     def setUp(self):
         # create layer
         self.mLayer1 = QgsVectorLayer(("LineString?field=pk:int&field=fk:int"), ("vl1"), ("memory"))
@@ -28,7 +19,9 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
         self.mLayer2.setDisplayExpression(("'Layer2-' || pk"))
         QgsProject.instance().addMapLayer(self.mLayer2, False)
 
-        self.mLayerJoin = QgsVectorLayer(("LineString?field=pk:int&field=fk_layer1:int&field=fk_layer2:int"), ("join_layer"), ("memory"))
+        self.mLayerJoin = QgsVectorLayer(
+            ("LineString?field=pk:int&field=fk_layer1:int&field=fk_layer2:int"), ("join_layer"), ("memory")
+        )
         self.mLayerJoin.setDisplayExpression(("'LayerJoin-' || pk"))
         QgsProject.instance().addMapLayer(self.mLayerJoin, False)
 
@@ -126,22 +119,15 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
 
     def test_Instantiate(self):
 
-        childLayer = QgsVectorLayer('Point?crs=epsg:4326&field=int:integer&field=int2:integer',
-                                    'childLayer',
-                                    'memory')
+        childLayer = QgsVectorLayer("Point?crs=epsg:4326&field=int:integer&field=int2:integer", "childLayer", "memory")
         self.assertTrue(childLayer.isValid())
 
-        parentLayer = QgsVectorLayer('Point?crs=epsg:4326&field=int:integer&field=int2:integer',
-                                     'parentLayer',
-                                     'memory')
+        parentLayer = QgsVectorLayer(
+            "Point?crs=epsg:4326&field=int:integer&field=int2:integer", "parentLayer", "memory"
+        )
         self.assertTrue(parentLayer.isValid())
 
-        dialog = LinkingChildManagerDialog(childLayer,
-                                           parentLayer,
-                                           QgsFeature(),
-                                           QgsRelation(),
-                                           QgsRelation(),
-                                           None)
+        dialog = LinkingChildManagerDialog(childLayer, parentLayer, QgsFeature(), QgsRelation(), QgsRelation(), None)
 
         self.assertEqual(dialog.mLayerNameLabel.text(), childLayer.name())
 
@@ -154,12 +140,7 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
 
         self.assertTrue(parentFeature.isValid())
 
-        dialog = LinkingChildManagerDialog(self.mLayer2,
-                                           self.mLayer1,
-                                           parentFeature,
-                                           self.mRelation,
-                                           QgsRelation(),
-                                           None)
+        LinkingChildManagerDialog(self.mLayer2, self.mLayer1, parentFeature, self.mRelation, QgsRelation(), None)
 
     def test_InstantiateRelationNM(self):
 
@@ -170,11 +151,4 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
 
         self.assertTrue(parentFeature.isValid())
 
-        dialog = LinkingChildManagerDialog(self.mLayer2,
-                                           self.mLayer1,
-                                           parentFeature,
-                                           self.mRelation1N,
-                                           self.mRelationNM,
-                                           None)
-
-
+        LinkingChildManagerDialog(self.mLayer2, self.mLayer1, parentFeature, self.mRelation1N, self.mRelationNM, None)

@@ -8,11 +8,12 @@
 #
 # -----------------------------------------------------------
 
-from linking_relation_editor.gui.vector_layer_selection_manager import VectorLayerSelectionManager
+from linking_relation_editor.gui.vector_layer_selection_manager import (
+    VectorLayerSelectionManager,
+)
 
 
 class FilteredSelectionManager(VectorLayerSelectionManager):
-
     def __init__(self, layer, request, parent):
 
         super().__init__(layer, parent)

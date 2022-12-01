@@ -10,41 +10,31 @@
 
 import os
 from enum import IntEnum
-from itertools import groupby
-from operator import itemgetter
-from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtCore import (
-    Qt,
-    QAbstractListModel,
-    QModelIndex,
-    QObject
-)
+
 from qgis.core import (
     QgsExpression,
     QgsExpressionContext,
     QgsExpressionContextUtils,
     QgsFeature,
     QgsVectorLayer,
-    QgsVectorLayerUtils
+    QgsVectorLayerUtils,
 )
+from qgis.PyQt.QtCore import QAbstractListModel, QModelIndex, QObject, Qt
+from qgis.PyQt.QtGui import QIcon
 
 
 class FeaturesModel(QAbstractListModel):
-
     class UserRole(IntEnum):
         FeatureId = Qt.UserRole + 1
 
     class FeatureState(IntEnum):
-        Linked = 1,
-        Unlinked = 2,
-        ToBeLinked = 3,
+        Linked = (1,)
+        Unlinked = (2,)
+        ToBeLinked = (3,)
         ToBeUnlinked = 4
 
     class FeaturesModelItem(object):
-        def __init__(self,
-                     feature: QgsFeature,
-                     featureState,
-                     layer: QgsVectorLayer):
+        def __init__(self, feature: QgsFeature, featureState, layer: QgsVectorLayer):
             self._feature = feature
             self._featureState = featureState
             self._layer = layer
@@ -59,20 +49,22 @@ class FeaturesModel(QAbstractListModel):
         def feature_state(self):
             return self._featureState
 
-        def set_feature_state(self,
-                              featureState):
+        def set_feature_state(self, featureState):
             self._featureState = featureState
 
         def display_string(self):
             return self._displayString
 
         def display_icon(self):
-            if self._featureState == FeaturesModel.FeatureState.Unlinked or self._featureState == FeaturesModel.FeatureState.Linked:
-                return QIcon(os.path.join(os.path.dirname(__file__), '../images/mNoAction.svg'))
+            if (
+                self._featureState == FeaturesModel.FeatureState.Unlinked
+                or self._featureState == FeaturesModel.FeatureState.Linked
+            ):
+                return QIcon(os.path.join(os.path.dirname(__file__), "../images/mNoAction.svg"))
             elif self._featureState == FeaturesModel.FeatureState.ToBeLinked:
-                return QIcon(os.path.join(os.path.dirname(__file__), '../images/mActionToBeLinked.svg'))
+                return QIcon(os.path.join(os.path.dirname(__file__), "../images/mActionToBeLinked.svg"))
             elif self._featureState == FeaturesModel.FeatureState.ToBeUnlinked:
-                return QIcon(os.path.join(os.path.dirname(__file__), '../images/mActionToBeUnlinked.svg'))
+                return QIcon(os.path.join(os.path.dirname(__file__), "../images/mActionToBeUnlinked.svg"))
 
             return QIcon()
 
@@ -81,28 +73,19 @@ class FeaturesModel(QAbstractListModel):
             subContext.appendScopes(QgsExpressionContextUtils.globalProjectLayerScopes(self._layer))
             subContext.setFeature(self._feature)
 
-            return QgsExpression.replaceExpressionText(self._layer.mapTipTemplate(),
-                                                       subContext)
+            return QgsExpression.replaceExpressionText(self._layer.mapTipTemplate(), subContext)
 
-    def __init__(self,
-                 features,
-                 featureState,
-                 layer: QgsVectorLayer,
-                 parent: QObject = None):
+    def __init__(self, features, featureState, layer: QgsVectorLayer, parent: QObject = None):
         super().__init__(parent)
 
         self._layer = layer
         self._modelFeatures = []
-        self.set_features(features,
-                          featureState)
+        self.set_features(features, featureState)
 
-    def rowCount(self,
-                 index: QModelIndex = ...) -> int:
+    def rowCount(self, index: QModelIndex = ...) -> int:
         return len(self._modelFeatures)
 
-    def data(self,
-             index: QModelIndex,
-             role: int = ...):
+    def data(self, index: QModelIndex, role: int = ...):
 
         if not index.isValid():
             return None
@@ -121,45 +104,33 @@ class FeaturesModel(QAbstractListModel):
 
         return None
 
-    def removeRows(self,
-                   row: int = ...,
-                   count: int = ...,
-                   index: QModelIndex = ...):
+    def removeRows(self, row: int = ..., count: int = ..., index: QModelIndex = ...):
 
         if row + count > self.rowCount():
             return False
 
-        self.beginRemoveRows(QModelIndex(),
-                             row,
-                             row + count - 1)
-        self._modelFeatures[row:(row + count)] = []
+        self.beginRemoveRows(QModelIndex(), row, row + count - 1)
+        self._modelFeatures[row : (row + count)] = []
         self.endRemoveRows()
         return True
 
     def supportedDropActions(self):
         return Qt.MoveAction
 
-    def set_features(self,
-                     features,
-                     features_state):
+    def set_features(self, features, features_state):
         self.beginResetModel()
 
         self._modelFeatures = []
         for feature in features:
-            self._modelFeatures.append(FeaturesModel.FeaturesModelItem(feature,
-                                                                       features_state,
-                                                                       self._layer))
+            self._modelFeatures.append(FeaturesModel.FeaturesModelItem(feature, features_state, self._layer))
 
         self.endResetModel()
 
     def get_all_feature_items(self):
         return self._modelFeatures
 
-    def add_features_model_items(self,
-                                 feature_model_elements):
-        self.beginInsertRows(QModelIndex(),
-                             self.rowCount(),
-                             self.rowCount() + len(feature_model_elements))
+    def add_features_model_items(self, feature_model_elements):
+        self.beginInsertRows(QModelIndex(), self.rowCount(), self.rowCount() + len(feature_model_elements))
         self._modelFeatures.extend(feature_model_elements)
         self.endInsertRows()
 
@@ -170,23 +141,19 @@ class FeaturesModel(QAbstractListModel):
         self.endResetModel()
         return featureModelElements
 
-    def take_item(self,
-                  index: QModelIndex):
+    def take_item(self, index: QModelIndex):
 
         if not index.isValid():
             return None
 
-        self.beginRemoveRows(QModelIndex(),
-                             index.row(),
-                             index.row()+1)
+        self.beginRemoveRows(QModelIndex(), index.row(), index.row() + 1)
         feature = self._modelFeatures[index.row()]
         del self._modelFeatures[index.row()]
         self.endRemoveRows()
 
         return feature
 
-    def take_items(self,
-                  indexes):
+    def take_items(self, indexes):
 
         if not indexes:
             return []
@@ -200,23 +167,19 @@ class FeaturesModel(QAbstractListModel):
 
         rows_to_remove.sort(reverse=True)
         for row in rows_to_remove:
-            self.beginRemoveRows(QModelIndex(),
-                                row,
-                                row+1)
+            self.beginRemoveRows(QModelIndex(), row, row + 1)
             del self._modelFeatures[row]
             self.endRemoveRows()
 
         return features
 
-    def contains(self,
-                 feature_id: int):
+    def contains(self, feature_id: int):
         for feature in self._modelFeatures:
             if feature.feature_id() == feature_id:
                 return True
         return False
 
-    def get_feature_index(self,
-                          feature_id: int):
+    def get_feature_index(self, feature_id: int):
         for index in range(len(self._modelFeatures)):
             if self._modelFeatures[index].feature_id() == feature_id:
                 return self.index(index, 0, QModelIndex())

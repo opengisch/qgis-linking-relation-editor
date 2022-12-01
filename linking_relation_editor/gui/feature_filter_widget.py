@@ -1,49 +1,48 @@
 # -- coding: utf-8 --
 
 import os
-from qgis.PyQt.QtCore import (
-    Qt,
-    QTimer
-)
-from qgis.PyQt.QtWidgets import (
-    QAction,
-    QDialog,
-    QMenu,
-    QToolButton,
-    QWidget
-)
-from qgis.PyQt.uic import loadUiType
+
 from qgis.core import (
+    Qgis,
     QgsApplication,
     QgsDistanceArea,
     QgsExpression,
     QgsExpressionContext,
     QgsExpressionContextUtils,
-    QgsFeature,
     QgsProject,
-    QgsVectorLayer
+    QgsStoredExpression,
+    QgsVectorLayer,
 )
 from qgis.gui import (
     QgsAttributeEditorContext,
     QgsAttributeForm,
-    QgsAttributeTableFilterModel,
-    QgsDualView,
+    QgsDialog,
     QgsExpressionBuilderDialog,
+    QgsExpressionLineEdit,
     QgsGui,
-    QgsMessageBar
+    QgsMessageBar,
 )
+from qgis.PyQt.QtCore import Qt, QTimer
+from qgis.PyQt.QtWidgets import (
+    QAction,
+    QDialog,
+    QDialogButtonBox,
+    QLabel,
+    QLineEdit,
+    QMenu,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
+)
+from qgis.PyQt.uic import loadUiType
+
 from linking_relation_editor.core.features_model_filter import FeaturesModelFilter
 
-
-WidgetUi, _ = loadUiType(os.path.join(os.path.dirname(__file__),
-                                      '../ui/feature_filter_widget.ui'))
+WidgetUi, _ = loadUiType(os.path.join(os.path.dirname(__file__), "../ui/feature_filter_widget.ui"))
 
 
-class FeatureFilterWidget(QWidget,
-                          WidgetUi):
-
-    def __init__(self,
-                 parent: QWidget):
+class FeatureFilterWidget(QWidget, WidgetUi):
+    def __init__(self, parent: QWidget):
         super().__init__(parent)
 
         # Ui setup
@@ -63,10 +62,18 @@ class FeatureFilterWidget(QWidget,
         self.mActionStoredFilterExpressions.setMenu(self.mStoredFilterExpressionMenu)
 
         # Set filter icon in a couple of places
-        self.mActionEditStoredFilterExpression.setIcon(QgsApplication.getThemeIcon("/mActionHandleStoreFilterExpressionChecked.svg"))
-        self.mActionSaveAsStoredFilterExpression.setIcon(QgsApplication.getThemeIcon("/mActionHandleStoreFilterExpressionUnchecked.svg"))
-        self.mActionHandleStoreFilterExpression.setIcon(QgsApplication.getThemeIcon("/mActionHandleStoreFilterExpressionUnchecked.svg"))
-        self.mActionStoredFilterExpressions.setIcon(QgsApplication.getThemeIcon("/mActionHandleStoreFilterExpressionChecked.svg"))
+        self.mActionEditStoredFilterExpression.setIcon(
+            QgsApplication.getThemeIcon("/mActionHandleStoreFilterExpressionChecked.svg")
+        )
+        self.mActionSaveAsStoredFilterExpression.setIcon(
+            QgsApplication.getThemeIcon("/mActionHandleStoreFilterExpressionUnchecked.svg")
+        )
+        self.mActionHandleStoreFilterExpression.setIcon(
+            QgsApplication.getThemeIcon("/mActionHandleStoreFilterExpressionUnchecked.svg")
+        )
+        self.mActionStoredFilterExpressions.setIcon(
+            QgsApplication.getThemeIcon("/mActionHandleStoreFilterExpressionChecked.svg")
+        )
         self.mActionShowAllFilter.setIcon(QgsApplication.getThemeIcon("/mActionOpenTable.svg"))
         self.mActionAdvancedFilter.setIcon(QgsApplication.getThemeIcon("/mActionFilter2.svg"))
         self.mActionSelectedFilter.setIcon(QgsApplication.getThemeIcon("/mActionOpenTableSelected.svg"))
@@ -90,12 +97,14 @@ class FeatureFilterWidget(QWidget,
         self.mActionApplyFilter.triggered.connect(self.filterQueryAccepted)
         self.mFilterQuery.textChanged.connect(self.onFilterQueryTextChanged)
 
-    def init(self,
-             layer: QgsVectorLayer,
-             context: QgsAttributeEditorContext,
-             features_model_filter: FeaturesModelFilter,
-             messageBar: QgsMessageBar,
-             messagebarTimeout: int):
+    def init(
+        self,
+        layer: QgsVectorLayer,
+        context: QgsAttributeEditorContext,
+        features_model_filter: FeaturesModelFilter,
+        messageBar: QgsMessageBar,
+        messagebarTimeout: int,
+    ):
         self._features_model_filter = features_model_filter
         self.mLayer = layer
         self.mEditorContext = context
@@ -153,25 +162,24 @@ class FeatureFilterWidget(QWidget,
         self._features_model_filter.set_feature_filter(FeaturesModelFilter.FeatureFilter.ShowEdited)
 
     def filterQueryAccepted(self):
-        if ((self.mFilterQuery.isVisible() and len(self.mFilterQuery.text()) == 0) or
-            (self.mCurrentSearchWidgetWrapper and self.mCurrentSearchWidgetWrapper.widget().isVisible()
-             and self.mCurrentSearchWidgetWrapper.expression().isEmpty())):
+        if (self.mFilterQuery.isVisible() and len(self.mFilterQuery.text()) == 0) or (
+            self.mCurrentSearchWidgetWrapper
+            and self.mCurrentSearchWidgetWrapper.widget().isVisible()
+            and self.mCurrentSearchWidgetWrapper.expression().isEmpty()
+        ):
             self.filterShowAll()
             return
 
         self.filterQueryChanged(self.mFilterQuery.text())
 
-    def filterQueryChanged(self,
-                           query: str):
+    def filterQueryChanged(self, query: str):
         if self.mFilterButton.defaultAction() == self.mActionAdvancedFilter:
             queryString = query
 
         elif self.mCurrentSearchWidgetWrapper:
             queryString = self.mCurrentSearchWidgetWrapper.expression()
 
-        self.setFilterExpression(queryString,
-                                 QgsAttributeForm.ReplaceFilter,
-                                 False)
+        self.setFilterExpression(queryString, QgsAttributeForm.ReplaceFilter, False)
 
     def columnBoxInit(self):
         for action in self.mFilterColumnsMenu.actions()[:]:
@@ -213,7 +221,9 @@ class FeatureFilterWidget(QWidget,
             self.mLayer.storedExpressionManager().removeStoredExpression(self.mActionHandleStoreFilterExpression.data())
 
         else:
-            self.mLayer.storedExpressionManager().addStoredExpression(self.mFilterQuery.text(), self.mFilterQuery.text())
+            self.mLayer.storedExpressionManager().addStoredExpression(
+                self.mFilterQuery.text(), self.mFilterQuery.text()
+            )
 
         self.updateCurrentStoredFilterExpression()
         self.storedFilterExpressionBoxInit()
@@ -225,29 +235,33 @@ class FeatureFilterWidget(QWidget,
 
         for storedExpression in self.mLayer.storedExpressionManager().storedExpressions():
             storedExpressionAction = QAction(storedExpression.name, self.mFilterButton)
-            storedExpressionAction.triggered.connect(lambda checked, storedExpression=storedExpression:
-                                                     self.setFilterExpression(storedExpression.expression,
-                                                                              QgsAttributeForm.ReplaceFilter,
-                                                                              True))
+            storedExpressionAction.triggered.connect(
+                lambda checked, storedExpression=storedExpression: self.setFilterExpression(
+                    storedExpression.expression, QgsAttributeForm.ReplaceFilter, True
+                )
+            )
             self.mStoredFilterExpressionMenu.addAction(storedExpressionAction)
 
     def storeExpressionButtonInit(self):
         if self.mActionHandleStoreFilterExpression.isChecked():
             self.mActionHandleStoreFilterExpression.setToolTip(self.tr("Delete stored expression"))
             self.mActionHandleStoreFilterExpression.setText(self.tr("Delete Stored Expression"))
-            self.mActionHandleStoreFilterExpression.setIcon(QgsApplication.getThemeIcon("mActionHandleStoreFilterExpressionChecked.svg"))
+            self.mActionHandleStoreFilterExpression.setIcon(
+                QgsApplication.getThemeIcon("mActionHandleStoreFilterExpressionChecked.svg")
+            )
             self.mStoreFilterExpressionButton.removeAction(self.mActionSaveAsStoredFilterExpression)
             self.mStoreFilterExpressionButton.addAction(self.mActionEditStoredFilterExpression)
 
         else:
             self.mActionHandleStoreFilterExpression.setToolTip(self.tr("Save expression with the text as name"))
             self.mActionHandleStoreFilterExpression.setText(self.tr("Save Expression"))
-            self.mActionHandleStoreFilterExpression.setIcon(QgsApplication.getThemeIcon("mActionHandleStoreFilterExpressionUnchecked.svg"))
+            self.mActionHandleStoreFilterExpression.setIcon(
+                QgsApplication.getThemeIcon("mActionHandleStoreFilterExpressionUnchecked.svg")
+            )
             self.mStoreFilterExpressionButton.addAction(self.mActionSaveAsStoredFilterExpression)
             self.mStoreFilterExpressionButton.removeAction(self.mActionEditStoredFilterExpression)
 
-    def filterColumnChanged(self,
-                            filterAction: QAction):
+    def filterColumnChanged(self, filterAction: QAction):
         self.mFilterButton.setDefaultAction(filterAction)
         self.mFilterButton.setPopupMode(QToolButton.InstantPopup)
         # replace the search line edit with a search widget that is suited to the selected field
@@ -263,11 +277,9 @@ class FeatureFilterWidget(QWidget,
             return
 
         setup = QgsGui.editorWidgetRegistry().findBest(self.mLayer, fieldName)
-        self.mCurrentSearchWidgetWrapper = QgsGui.editorWidgetRegistry().createSearchWidget(setup.type(),
-                                                                                            self.mLayer,
-                                                                                            fldIdx,
-                                                                                            setup.config(),
-                                                                                            self.mFilterContainer)
+        self.mCurrentSearchWidgetWrapper = QgsGui.editorWidgetRegistry().createSearchWidget(
+            setup.type(), self.mLayer, fldIdx, setup.config(), self.mFilterContainer
+        )
         if self.mCurrentSearchWidgetWrapper.applyDirectly():
             self.mCurrentSearchWidgetWrapper.expressionChanged.connect(self.filterQueryChanged)
             self.mApplyFilterButton.setVisible(False)
@@ -284,11 +296,7 @@ class FeatureFilterWidget(QWidget,
         # Show expression builder
         context = QgsExpressionContext(QgsExpressionContextUtils.globalProjectLayerScopes(self.mLayer))
 
-        dlg = QgsExpressionBuilderDialog(self.mLayer,
-                                         self.mFilterQuery.text(),
-                                         self,
-                                         "generic",
-                                         context)
+        dlg = QgsExpressionBuilderDialog(self.mLayer, self.mFilterQuery.text(), self, "generic", context)
         dlg.setWindowTitle(self.tr("Expression Based Filter"))
 
         myDa = QgsDistanceArea()
@@ -303,7 +311,7 @@ class FeatureFilterWidget(QWidget,
         dlg = QgsDialog(self, Qt.WindowFlags(), QDialogButtonBox.Save | QDialogButtonBox.Cancel)
         dlg.setWindowTitle(self.tr("Save Expression As"))
         layout = QVBoxLayout(dlg.layout())
-        dlg.resize(std.max(400, self.width() / 2), dlg.height())
+        dlg.resize(max(400, self.width() / 2), dlg.height())
 
         nameLabel = QLabel(self.tr("Name"), dlg)
         nameEdit = QLineEdit(dlg)
@@ -314,23 +322,27 @@ class FeatureFilterWidget(QWidget,
         if dlg.exec() == QDialog.Accepted:
             self.mLayer.storedExpressionManager().addStoredExpression(nameEdit.text(), self.mFilterQuery.text())
 
-            updateCurrentStoredFilterExpression()
-            storedFilterExpressionBoxInit()
+            self.updateCurrentStoredFilterExpression()
+            self.storedFilterExpressionBoxInit()
 
     def editStoredFilterExpression(self):
         dlg = QgsDialog(self, Qt.WindowFlags(), QDialogButtonBox.Save | QDialogButtonBox.Cancel)
         dlg.setWindowTitle(self.tr("Edit expression"))
         layout = QVBoxLayout(dlg.layout())
-        dlg.resize(std.max(400, self.width() / 2), dlg.height())
+        dlg.resize(max(400, self.width() / 2), dlg.height())
 
-        nameLabel = QLabel(self.tr("Name"),
-                           dlg)
-        nameEdit = QLineEdit(self.mLayer.storedExpressionManager().storedExpression(self.mActionHandleStoreFilterExpression.data()).name,
-                             dlg)
-        expressionLabel = QLabel(self.tr("Expression"),
-                                 dlg)
+        nameLabel = QLabel(self.tr("Name"), dlg)
+        nameEdit = QLineEdit(
+            self.mLayer.storedExpressionManager().storedExpression(self.mActionHandleStoreFilterExpression.data()).name,
+            dlg,
+        )
+        expressionLabel = QLabel(self.tr("Expression"), dlg)
         expressionEdit = QgsExpressionLineEdit(dlg)
-        expressionEdit.setExpression(self.mLayer.storedExpressionManager().storedExpression(self.mActionHandleStoreFilterExpression.data()).expression)
+        expressionEdit.setExpression(
+            self.mLayer.storedExpressionManager()
+            .storedExpression(self.mActionHandleStoreFilterExpression.data())
+            .expression
+        )
 
         layout.addWidget(nameLabel)
         layout.addWidget(nameEdit)
@@ -340,15 +352,22 @@ class FeatureFilterWidget(QWidget,
 
         if dlg.exec() == QDialog.Accepted:
             # Update stored expression
-            self.mLayer.storedExpressionManager().updateStoredExpression(self.mActionHandleStoreFilterExpression.data(), nameEdit.text(), expressionEdit.expression(), QgsStoredExpression.Category.FilterExpression)
+            self.mLayer.storedExpressionManager().updateStoredExpression(
+                self.mActionHandleStoreFilterExpression.data(),
+                nameEdit.text(),
+                expressionEdit.expression(),
+                QgsStoredExpression.Category.FilterExpression,
+            )
 
             # Update text
             self.mFilterQuery.setValue(expressionEdit.expression())
 
-            storedFilterExpressionBoxInit()
+            self.storedFilterExpressionBoxInit()
 
     def updateCurrentStoredFilterExpression(self):
-        currentStoredExpression = self.mLayer.storedExpressionManager().findStoredExpressionByExpression(self.mFilterQuery.value())
+        currentStoredExpression = self.mLayer.storedExpressionManager().findStoredExpressionByExpression(
+            self.mFilterQuery.value()
+        )
 
         # Set checked when it's an existing stored expression
         self.mActionHandleStoreFilterExpression.setChecked(len(currentStoredExpression.id) > 0)
@@ -359,10 +378,7 @@ class FeatureFilterWidget(QWidget,
         # Update bookmark button
         self.storeExpressionButtonInit()
 
-    def setFilterExpression(self,
-                            filterString: str,
-                            type: QgsAttributeForm.FilterType,
-                            alwaysShowFilter: bool):
+    def setFilterExpression(self, filterString: str, type: QgsAttributeForm.FilterType, alwaysShowFilter: bool):
         filter = str()
         if self.mFilterQuery.text() and filterString:
             if type == QgsAttributeForm.ReplaceFilter:
@@ -383,7 +399,11 @@ class FeatureFilterWidget(QWidget,
 
         self.mFilterQuery.setText(filter)
 
-        if alwaysShowFilter or not self.mCurrentSearchWidgetWrapper or not self.mCurrentSearchWidgetWrapper.applyDirectly():
+        if (
+            alwaysShowFilter
+            or not self.mCurrentSearchWidgetWrapper
+            or not self.mCurrentSearchWidgetWrapper.applyDirectly()
+        ):
 
             self.mFilterButton.setDefaultAction(self.mActionAdvancedFilter)
             self.mFilterButton.setPopupMode(QToolButton.MenuButtonPopup)
@@ -397,26 +417,27 @@ class FeatureFilterWidget(QWidget,
         # parse search string and build parsed tree
         filterExpression = QgsExpression(filter)
         if filterExpression.hasParserError():
-            self.mMessageBar.pushMessage(self.tr("Parsing error"), filterExpression.parserErrorString(), Qgis.MessageLevel.Warning)
+            self.mMessageBar.pushMessage(
+                self.tr("Parsing error"), filterExpression.parserErrorString(), Qgis.MessageLevel.Warning
+            )
             return
 
         context = QgsExpressionContext(QgsExpressionContextUtils.globalProjectLayerScopes(self.mLayer))
 
         if not filterExpression.prepare(context):
-            self.mMessageBar.pushMessage(self.tr("Evaluation error"), filterExpression.evalErrorString(), Qgis.MessageLevel.Warning)
+            self.mMessageBar.pushMessage(
+                self.tr("Evaluation error"), filterExpression.evalErrorString(), Qgis.MessageLevel.Warning
+            )
 
         self._features_model_filter.set_feature_filter_expression(filterExpression, context)
         self._features_model_filter.set_feature_filter(FeaturesModelFilter.FeatureFilter.ShowFilteredList)
 
-    def replaceSearchWidget(self,
-                            oldw: QWidget,
-                            neww: QWidget):
+    def replaceSearchWidget(self, oldw: QWidget, neww: QWidget):
         self.mFilterLayout.removeWidget(oldw)
         oldw.setVisible(False)
         self.mFilterLayout.addWidget(neww, 0, 0)
         neww.setVisible(True)
         neww.setFocus()
 
-    def onFilterQueryTextChanged(self,
-                                 value: str):
+    def onFilterQueryTextChanged(self, value: str):
         self.mFilterQueryTimer.start(300)
