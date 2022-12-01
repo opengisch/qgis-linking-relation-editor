@@ -237,7 +237,9 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
                 QMessageBox.critical(
                     self._canvas().window(),
                     self.tr("One to one"),
-                    self.tr("In one to one mode only one feature at the time can be linked."),
+                    self.tr(
+                        "In one to one mode only one feature at the time can be linked. If it should not be in one to one mode, then change the cardinality in the relation editor configuration."
+                    ),
                 )
                 return
 
@@ -280,7 +282,9 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
                 QMessageBox.critical(
                     self._canvas().window(),
                     self.tr("One to one"),
-                    self.tr("In one to one mode only one feature at the time can be linked."),
+                    self.tr(
+                        "In one to one mode only one feature at the time can be linked. If it should not be in one to one mode, then change the cardinality in the relation editor configuration."
+                    ),
                 )
                 return
 
