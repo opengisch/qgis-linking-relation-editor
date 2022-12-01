@@ -127,7 +127,9 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
         )
         self.assertTrue(parentLayer.isValid())
 
-        dialog = LinkingChildManagerDialog(childLayer, parentLayer, QgsFeature(), QgsRelation(), QgsRelation(), None)
+        dialog = LinkingChildManagerDialog(
+            childLayer, parentLayer, QgsFeature(), QgsRelation(), QgsRelation(), False, None
+        )
 
         self.assertEqual(dialog.mLayerNameLabel.text(), childLayer.name())
 
@@ -140,7 +142,7 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
 
         self.assertTrue(parentFeature.isValid())
 
-        LinkingChildManagerDialog(self.mLayer2, self.mLayer1, parentFeature, self.mRelation, QgsRelation(), None)
+        LinkingChildManagerDialog(self.mLayer2, self.mLayer1, parentFeature, self.mRelation, QgsRelation(), False, None)
 
     def test_InstantiateRelationNM(self):
 
@@ -151,4 +153,6 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
 
         self.assertTrue(parentFeature.isValid())
 
-        LinkingChildManagerDialog(self.mLayer2, self.mLayer1, parentFeature, self.mRelation1N, self.mRelationNM, None)
+        LinkingChildManagerDialog(
+            self.mLayer2, self.mLayer1, parentFeature, self.mRelation1N, self.mRelationNM, False, None
+        )
