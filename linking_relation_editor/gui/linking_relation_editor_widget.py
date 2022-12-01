@@ -14,8 +14,10 @@ from enum import IntEnum
 from qgis.core import (
     Qgis,
     QgsApplication,
+    QgsFeature,
     QgsFeatureRequest,
     QgsGeometry,
+    QgsIconUtils,
     QgsLogger,
     QgsMessageLog,
     QgsProject,
@@ -34,7 +36,7 @@ from qgis.gui import (
 )
 from qgis.PyQt.QtCore import QT_VERSION_STR, Qt, QTimer
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QButtonGroup, QSplitter
+from qgis.PyQt.QtWidgets import QButtonGroup, QSplitter, QTreeWidgetItem
 from qgis.PyQt.uic import loadUiType
 
 from linking_relation_editor.core.plugin_helper import PluginHelper
@@ -169,6 +171,8 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         self.mMapToolDigitize = None
         self.mMessageBarItem = None
 
+        self.mMultiEditPreviousSelectedItems = list()
+
         # Set initial state for add / remove etc.buttons
         self.updateButtons()
 
@@ -265,7 +269,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
             selectionNotEmpty = self.mFeatureSelectionMgr.selectedFeatureCount() > 0
 
         if self._multiEditModeActive():
-            multieditLinkedChildSelected = not self.selectedChildFeatureIds().isEmpty()
+            multieditLinkedChildSelected = len(self.selectedChildFeatureIds()) != 0
 
             canAddGeometry = False
 
@@ -398,10 +402,10 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         self.mMultiEditInfoLabel.setVisible(True)
         self.mStackedWidget.setCurrentWidget(self.mMultiEditStackedWidgetPage)
         parentTreeWidgetItems = []
-        featureIdsMixedValues = []
+        featureIdsMixedValues = set()
         multimapChildFeatures = dict()
         self.mMultiEditTreeWidget.clear()
-        for featureParent in self.mFeatureList:
+        for featureParent in self._featureList():
             treeWidgetItem = self.createMultiEditTreeWidgetItem(
                 featureParent, self.relation().referencedLayer(), self.MultiEditFeatureType.Parent
             )
@@ -418,7 +422,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
                             featureChildChild, self.nmRelation().referencedLayer(), self.MultiEditFeatureType.Child
                         )
                         treeWidgetItem.addChild(treeWidgetItemChild)
-                        featureIdsMixedValues.insert(featureChildChild.id())
+                        featureIdsMixedValues.add(featureChildChild.id())
 
                         if treeWidgetItem in multimapChildFeatures:
                             multimapChildFeatures[treeWidgetItem].append(featureChildChild.id())
@@ -430,7 +434,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
                         featureChild, self.relation().referencingLayer(), self.MultiEditFeatureType.Child
                     )
                     treeWidgetItem.addChild(treeWidgetItemChild)
-                    featureIdsMixedValues.insert(featureChild.id())
+                    featureIdsMixedValues.add(featureChild.id())
 
             self.mMultiEditTreeWidget.addTopLevelItem(treeWidgetItem)
             treeWidgetItem.setExpanded(True)
@@ -459,7 +463,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
                     continue
 
         # Set multiedit info label
-        if featureIdsMixedValues.isEmpty():
+        if not featureIdsMixedValues:
             icon = QgsApplication.getThemeIcon("/multieditSameValues.svg")
             self.mMultiEditInfoLabel.setPixmap(
                 icon.pixmap(self.mMultiEditInfoLabel.height(), self.mMultiEditInfoLabel.height())
@@ -657,26 +661,23 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
         # Select all items pointing to the same feature
         # but only if we are not deselecting.
-        if selectedItems.size() == 1 and self.mMultiEditPreviousSelectedItems.size() <= 1:
+        if len(selectedItems) == 1 and len(self.mMultiEditPreviousSelectedItems) <= 1:
             selectedItem = selectedItems[0]
-            if (
-                selectedItem.data(0, self.MultiEditTreeWidgetRole.FeatureType).toInt()
-                == self.MultiEditFeatureType.Child
-            ):
+            if selectedItem.data(0, self.MultiEditTreeWidgetRole.FeatureType) == self.MultiEditFeatureType.Child:
                 self.mMultiEditTreeWidget.blockSignals(True)
 
-                featureIdSelectedItem = selectedItem.data(0, self.MultiEditTreeWidgetRole.FeatureId).toInt()
+                featureIdSelectedItem = selectedItem.data(0, self.MultiEditTreeWidgetRole.FeatureId)
 
                 for i in range(self.mMultiEditTreeWidget.childCount()):
                     treeWidgetItem = self.mMultiEditTreeWidget.child(i)
 
                     if (
-                        treeWidgetItem.data(0, self.MultiEditTreeWidgetRole.FeatureType).toInt()
+                        treeWidgetItem.data(0, self.MultiEditTreeWidgetRole.FeatureType)
                         != self.MultiEditFeatureType.Child
                     ):
                         continue
 
-                    featureIdCurrentItem = treeWidgetItem.data(0, self.MultiEditTreeWidgetRole.FeatureId).toInt()
+                    featureIdCurrentItem = treeWidgetItem.data(0, self.MultiEditTreeWidgetRole.FeatureId)
                     if self.nmRelation().isValid():
                         if featureIdSelectedItem == featureIdCurrentItem:
                             treeWidgetItem.setSelected(True)
@@ -696,10 +697,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         if self._multiEditModeActive():
             featureIds = set()
             for treeWidgetItem in self.mMultiEditTreeWidget.selectedItems():
-                if (
-                    treeWidgetItem.data(0, self.MultiEditTreeWidgetRole.FeatureType).toInt()
-                    != self.MultiEditFeatureType.Child
-                ):
+                if treeWidgetItem.data(0, self.MultiEditTreeWidgetRole.FeatureType) != self.MultiEditFeatureType.Child:
                     continue
 
                 featureIds.insert(treeWidgetItem.data(0, self.MultiEditTreeWidgetRole.FeatureId).toLongLong())
@@ -831,3 +829,11 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         self.window().raise_()
         self.window().activateWindow()
         self.unsetMapTool()
+
+    def createMultiEditTreeWidgetItem(self, feature: QgsFeature, layer: QgsVectorLayer, type: MultiEditFeatureType):
+        treeWidgetItem = QTreeWidgetItem()
+        treeWidgetItem.setText(0, QgsVectorLayerUtils.getFeatureDisplayString(layer, feature))
+        treeWidgetItem.setIcon(0, QgsIconUtils.iconForLayer(layer))
+        treeWidgetItem.setData(0, self.MultiEditTreeWidgetRole.FeatureType, type)
+        treeWidgetItem.setData(0, self.MultiEditTreeWidgetRole.FeatureId, feature.id())
+        return treeWidgetItem

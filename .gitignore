@@ -10,3 +10,4 @@ github_deploy_key.out
 *.gpkg-shm
 *.gpkg-wal
 *.qgs~
+*.pyproject*
