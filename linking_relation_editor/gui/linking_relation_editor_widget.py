@@ -365,7 +365,6 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
             QgsMessageLog.logMessage("parentFormValueChanged()")
 
     def updateUiSingleEdit(self):
-
         self.mFormViewButton.setVisible(not self.mOneToOne)
         self.mTableViewButton.setVisible(not self.mOneToOne)
         self.mMultiEditInfoLabel.setVisible(False)
@@ -542,7 +541,6 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         self.duplicateFeatures(self.mFeatureSelectionMgr.selectedFeatureIds())
 
     def _execLinkFeatureDialog(self):
-
         layer = None
 
         if self.nmRelation().isValid():
@@ -568,7 +566,6 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         relationEditorLinkChildManagerDialog.show()
 
     def _linkFeatures(self, featureIds):
-
         if len(featureIds) == 0:
             return
 
@@ -585,9 +582,8 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
                 polyRel = self.relation().polymorphicRelation()
                 assert polyRel.isValid()
 
-                linkAttributes.insert(
-                    fields.indexFromName(polyRel.referencedLayerField()),
-                    polyRel.layerRepresentation(self.relation().referencedLayer()),
+                linkAttributes[fields.indexFromName(polyRel.referencedLayerField())] = polyRel.layerRepresentation(
+                    self.relation().referencedLayer()
                 )
 
             linkFeatureDataList = []
@@ -754,7 +750,6 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         self.updateButtons()
 
     def _checkTransactionGroup(self):
-
         self._layerInSameTransactionGroup = False
         connectionString = PluginHelper.connectionString(self.relation().referencedLayer().source())
         transactionGroup = QgsProject.instance().transactionGroup(
