@@ -12,7 +12,7 @@ class MapToolSelectRectangle(QgsMapToolEmitPoint):
         self.canvas = canvas
         QgsMapToolEmitPoint.__init__(self, self.canvas)
         self._layer = layer
-        self.rubberBand = QgsRubberBand(self.canvas, True)
+        self.rubberBand = QgsRubberBand(self.canvas, QgsWkbTypes.PolygonGeometry )
         self.rubberBand.setColor(Qt.red)
         self.rubberBand.setFillColor(QColor(254, 178, 76, 63))
         self.rubberBand.setStrokeColor(QColor(254, 58, 29, 100))
@@ -24,7 +24,7 @@ class MapToolSelectRectangle(QgsMapToolEmitPoint):
     def reset(self):
         self.startPoint = self.endPoint = None
         self.isEmittingPoint = False
-        self.rubberBand.reset(True)
+        self.rubberBand.reset( QgsWkbTypes.PolygonGeometry )
 
     def keyPressEvent(self, keyEvent):
         if keyEvent.key() == Qt.Key_Escape:
