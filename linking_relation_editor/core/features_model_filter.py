@@ -129,7 +129,7 @@ class FeaturesModelFilter(QSortFilterProxyModel):
         if not rowDisplayRole:
             return False
 
-        return self._quick_filter.lower() in rowDisplayRole.lower()
+        return all( word.lower() in rowDisplayRole.lower() for word in self._quick_filter.split() )
 
     def _prepare_filtered_features(self):
 

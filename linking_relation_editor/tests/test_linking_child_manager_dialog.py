@@ -1,3 +1,4 @@
+from qgis.PyQt.QtCore import Qt
 from qgis.core import QgsFeature, QgsProject, QgsRelation, QgsVectorLayer
 from qgis.testing import start_app, unittest
 
@@ -11,8 +12,8 @@ start_app()
 class TestLinkingChildManagerDialog(unittest.TestCase):
     def setUp(self):
         # create layer
-        self.mLayer1 = QgsVectorLayer(("LineString?field=pk:int&field=fk:int"), ("vl1"), ("memory"))
-        self.mLayer1.setDisplayExpression(("'Layer1-' || pk"))
+        self.mLayer1 = QgsVectorLayer(("LineString?field=pk:int&field=fk:int&field=name:string"), ("vl1"), ("memory"))
+        self.mLayer1.setDisplayExpression(("'Layer1-' || pk || ': ' || name"))
         QgsProject.instance().addMapLayer(self.mLayer1, False)
 
         self.mLayer2 = QgsVectorLayer(("LineString?field=pk:int"), ("vl2"), ("memory"))
@@ -58,56 +59,58 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
         ft0 = QgsFeature(self.mLayer1.fields())
         ft0.setAttribute("pk", 0)
         ft0.setAttribute("fk", 10)
+        ft0.setAttribute("name", "The Artist formerly known as Prince")
         self.mLayer1.startEditing()
         self.mLayer1.addFeature(ft0)
         self.mLayer1.commitChanges()
 
         ft1 = QgsFeature(self.mLayer1.fields())
-        ft1.setAttribute(("pk"), 1)
-        ft1.setAttribute(("fk"), 11)
+        ft1.setAttribute("pk", 1)
+        ft1.setAttribute("fk", 11)
+        ft1.setAttribute("name", "Martina formerly known as Prisca")
         self.mLayer1.startEditing()
         self.mLayer1.addFeature(ft1)
         self.mLayer1.commitChanges()
 
         ft2 = QgsFeature(self.mLayer2.fields())
-        ft2.setAttribute(("pk"), 10)
+        ft2.setAttribute("pk", 10)
         self.mLayer2.startEditing()
         self.mLayer2.addFeature(ft2)
         self.mLayer2.commitChanges()
 
         ft3 = QgsFeature(self.mLayer2.fields())
-        ft3.setAttribute(("pk"), 11)
+        ft3.setAttribute("pk", 11)
         self.mLayer2.startEditing()
         self.mLayer2.addFeature(ft3)
         self.mLayer2.commitChanges()
 
         ft4 = QgsFeature(self.mLayer2.fields())
-        ft4.setAttribute(("pk"), 12)
+        ft4.setAttribute("pk", 12)
         self.mLayer2.startEditing()
         self.mLayer2.addFeature(ft4)
         self.mLayer2.commitChanges()
 
         # Add join features
         jft1 = QgsFeature(self.mLayerJoin.fields())
-        jft1.setAttribute(("pk"), 101)
-        jft1.setAttribute(("fk_layer1"), 0)
-        jft1.setAttribute(("fk_layer2"), 10)
+        jft1.setAttribute("pk", 101)
+        jft1.setAttribute("fk_layer1", 0)
+        jft1.setAttribute("fk_layer2", 10)
         self.mLayerJoin.startEditing()
         self.mLayerJoin.addFeature(jft1)
         self.mLayerJoin.commitChanges()
 
         jft2 = QgsFeature(self.mLayerJoin.fields())
-        jft2.setAttribute(("pk"), 102)
-        jft2.setAttribute(("fk_layer1"), 1)
-        jft2.setAttribute(("fk_layer2"), 11)
+        jft2.setAttribute("pk", 102)
+        jft2.setAttribute("fk_layer1", 1)
+        jft2.setAttribute("fk_layer2", 11)
         self.mLayerJoin.startEditing()
         self.mLayerJoin.addFeature(jft2)
         self.mLayerJoin.commitChanges()
 
         jft3 = QgsFeature(self.mLayerJoin.fields())
-        jft3.setAttribute(("pk"), 102)
-        jft3.setAttribute(("fk_layer1"), 0)
-        jft3.setAttribute(("fk_layer2"), 11)
+        jft3.setAttribute("pk", 102)
+        jft3.setAttribute("fk_layer1", 0)
+        jft3.setAttribute("fk_layer2", 11)
         self.mLayerJoin.startEditing()
         self.mLayerJoin.addFeature(jft3)
         self.mLayerJoin.commitChanges()
@@ -136,13 +139,15 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
     def test_InstantiateRelation1N(self):
 
         parentFeature = QgsFeature()
-        for feature in self.mLayer1.getFeatures():
+        for feature in self.mLayer2.getFeatures():
             parentFeature = feature
             break
 
         self.assertTrue(parentFeature.isValid())
 
-        LinkingChildManagerDialog(self.mLayer2, self.mLayer1, parentFeature, self.mRelation, QgsRelation(), False, None)
+        dialog = LinkingChildManagerDialog(self.mLayer1, self.mLayer2, parentFeature, self.mRelation, QgsRelation(), False, None)
+
+        self.assertEqual(dialog.mLayerNameLabel.text(), self.mLayer1.name())
 
     def test_InstantiateRelationNM(self):
 
@@ -153,6 +158,81 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
 
         self.assertTrue(parentFeature.isValid())
 
-        LinkingChildManagerDialog(
+        dialog = LinkingChildManagerDialog(
             self.mLayer2, self.mLayer1, parentFeature, self.mRelation1N, self.mRelationNM, False, None
         )
+
+        self.assertEqual(dialog.mLayerNameLabel.text(), self.mLayer2.name())
+    
+    def test_quickFilter(self):
+    
+        # get a parent with no childs
+        parentFeature = QgsFeature()
+        for feature in self.mLayer2.getFeatures():
+            if feature.attribute("pk") == 12:
+                parentFeature = feature
+                break
+
+        self.assertTrue(parentFeature.isValid())
+
+        dialog = LinkingChildManagerDialog(self.mLayer1, self.mLayer2, parentFeature, self.mRelation, QgsRelation(), False, None)
+
+        self.assertEqual(dialog.mLayerNameLabel.text(), self.mLayer1.name())
+
+
+        # all entries
+        # "Layer1-0: The Artist formerly known as Prince" 
+        # "Layer1-1: Martina formerly known as Prisca"
+        self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 2)
+        self.assertEqual( dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole), "Layer1-0: The Artist formerly known as Prince")
+        self.assertEqual( dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.DisplayRole), "Layer1-1: Martina formerly known as Prisca" )
+
+
+        dialog._featuresModelFilterLeft.set_quick_filter("Prince")
+        # "Layer1-0: The Artist formerly known as *Prince*"
+        # no "Prince" in the other entry
+        self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 1)
+        self.assertEqual( dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole), "Layer1-0: The Artist formerly known as Prince")
+
+        dialog._featuresModelFilterLeft.set_quick_filter("formerly")
+        # "Layer1-0: The Artist *formerly* known as Prince" 
+        # "Layer1-1: Martina *formerly* known as Prisca"
+        self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 2)
+        self.assertEqual( dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole), "Layer1-0: The Artist formerly known as Prince")
+        self.assertEqual( dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.DisplayRole), "Layer1-1: Martina formerly known as Prisca" )
+
+        dialog._featuresModelFilterLeft.set_quick_filter("formerly Pri")
+        # "Layer1-0: The Artist *formerly* known as *Pri*nce" 
+        # "Layer1-1: Martina *formerly* known as *Pri*sca"
+        self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 2)
+        self.assertEqual( dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole), "Layer1-0: The Artist formerly known as Prince")
+        self.assertEqual( dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.DisplayRole), "Layer1-1: Martina formerly known as Prisca" )
+
+        dialog._featuresModelFilterLeft.set_quick_filter("formerly Pri art")
+        # "Layer1-0: The *Art*ist *formerly* known as *Pri*nce" 
+        # "Layer1-1: M*art*ina *formerly* known as *Pri*sca"
+        self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 2)
+        self.assertEqual( dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole), "Layer1-0: The Artist formerly known as Prince")
+        self.assertEqual( dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.DisplayRole), "Layer1-1: Martina formerly known as Prisca" )
+
+        dialog._featuresModelFilterLeft.set_quick_filter("formerly Pri art the")
+        # "Layer1-0: *The* *Art*ist *formerly* known as *Pri*nce"
+        # no "the" in the other entry
+        self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 1)
+        self.assertEqual( dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole), "Layer1-0: The Artist formerly known as Prince")
+
+        dialog._featuresModelFilterLeft.set_quick_filter("formerly Pri Mar")
+        # "Layer1-1: *Mar*tina *formerly* known as *Pri*sca"
+        self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 1)
+        self.assertEqual( dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole), "Layer1-1: Martina formerly known as Prisca" )
+
+        dialog._featuresModelFilterLeft.set_quick_filter("formerly Pri Charles")
+        # no "Charles"
+        self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 0)
+
+        dialog._featuresModelFilterLeft.set_quick_filter("")
+        # "Layer1-0: The Artist formerly known as Prince" 
+        # "Layer1-1: Martina formerly known as Prisca"
+        self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 2)
+        self.assertEqual( dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole), "Layer1-0: The Artist formerly known as Prince")
+        self.assertEqual( dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.DisplayRole), "Layer1-1: Martina formerly known as Prisca" )
