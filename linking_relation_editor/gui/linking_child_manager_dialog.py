@@ -19,14 +19,14 @@ from qgis.core import (
     QgsVectorLayerUtils,
 )
 from qgis.gui import (
-    QgsAttributeDialog,
     QgsAttributeEditorContext,
+    QgsAttributeForm,
     QgsHighlight,
     QgsIdentifyMenu,
     QgsMessageBar,
 )
 from qgis.PyQt.QtCore import Qt, QTimer
-from qgis.PyQt.QtWidgets import QAction, QDialog, QMessageBox, QTreeWidgetItem, QWidget
+from qgis.PyQt.QtWidgets import QAction, QDialog, QMessageBox, QTreeWidgetItem
 from qgis.PyQt.uic import loadUiType
 from qgis.utils import iface
 
@@ -158,15 +158,17 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
                 treeWidgetItemChildren = QTreeWidgetItem(treeWidgetItem)
                 treeWidgetItem.addChild(treeWidgetItemChildren)
 
-                attributeDialog = QgsAttributeDialog(
-                    self._nmRelation.referencingLayer(), QgsFeature(), False, self, False
-                )
-                layout = attributeDialog.layout()
-                layout.setMenuBar(None)
+                joinLayer = self._nmRelation.referencingLayer()
+                joinFeature = QgsFeature()
 
-                widget = QWidget()
-                widget.setLayout(layout)
-                self.mFeaturesTreeWidgetRight.setItemWidget(treeWidgetItemChildren, 0, widget)
+                if featureItem.feature_state() == FeaturesModel.FeatureState.Linked:
+                    request = self._nmRelation.getRelatedFeaturesRequest(featureItem.feature())
+                    for jfeature in joinLayer.getFeatures(request):
+                        joinFeature = jfeature
+
+                attributeForm = QgsAttributeForm(joinLayer, joinFeature)
+
+                self.mFeaturesTreeWidgetRight.setItemWidget(treeWidgetItemChildren, 0, attributeForm)
 
         self.mQuickFilterLineEdit.setVisible(False)
 
