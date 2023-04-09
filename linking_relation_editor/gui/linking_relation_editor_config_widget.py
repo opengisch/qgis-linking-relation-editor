@@ -10,16 +10,20 @@
 
 from qgis.core import QgsLogger
 from qgis.gui import QgsRelationEditorConfigWidget
-from qgis.PyQt.QtWidgets import QComboBox
+from qgis.PyQt.QtWidgets import QComboBox, QFormLayout
+
+from linking_relation_editor.gui.linking_child_manager_dialog_config_widget import (
+    LinkingChildManagerDialogConfigWidget,
+)
 
 
 class LinkingRelationEditorConfigWidget(QgsRelationEditorConfigWidget):
-
     USER_DATA_ONE_TO_ONE = "one_to_one"
 
     def __init__(self, relation, parent):
         super().__init__(relation, parent)
 
+        # Setup cardinality combobox with additional entry for one to one
         self.__relation_cardinality_combobox = None
         relation_cardinality_combobox_name = "mRelationCardinalityCombo"
         comboboxes = self.parent().findChildren(QComboBox)
@@ -36,6 +40,22 @@ class LinkingRelationEditorConfigWidget(QgsRelationEditorConfigWidget):
             self.__relation_cardinality_combobox.addItem(
                 "One to one relation", LinkingRelationEditorConfigWidget.USER_DATA_ONE_TO_ONE
             )
+
+        # Insert the linking dialog config widget in the layout
+        formLayout = None
+        formLayoutName = "formLayout"
+        formLayouts = self.parent().findChildren(QFormLayout)
+        for layout in formLayouts:
+            if layout.objectName() == formLayoutName:
+                formLayout = layout
+                break
+
+        if formLayout is None:
+            QgsLogger.warning(self.tr("QFormLayout with object name '{}' not found".format(formLayout)))
+        else:
+            linkingChildManagerDialogConfigWidget = LinkingChildManagerDialogConfigWidget()
+
+            formLayout.insertRow(5, linkingChildManagerDialogConfigWidget)
 
     def setConfig(self, config):
         one_to_one = config.get("one_to_one", False)

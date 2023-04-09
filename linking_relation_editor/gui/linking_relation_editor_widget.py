@@ -789,8 +789,11 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
     def _relationEditorLinkChildManagerDialogAccepted(self):
         relationEditorLinkChildManagerDialog = self.sender()
+
+        # Link/unlink features
         self.unlinkFeatures(relationEditorLinkChildManagerDialog.get_feature_ids_to_unlink())
         self._linkFeatures(relationEditorLinkChildManagerDialog.get_feature_ids_to_link())
+
         relationEditorLinkChildManagerDialog.deleteLater()
 
     def _setMapTool(self, mapTool):

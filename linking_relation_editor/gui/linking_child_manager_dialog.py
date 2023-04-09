@@ -64,7 +64,8 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
         if self._canvas():
             self._mapToolSelect = MapToolSelectRectangle(self._canvas(), self._layer)
 
-        self._highlight = list()
+        self._highlight = []
+        self._featureFormWidgets = []
 
         # Ui setup
         self.setupUi(self)
@@ -165,8 +166,8 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
             self._feature_filter_widget.filterShowAll()
 
         # Signal slots
-        self.accepted.connect(self._closing)
-        self.rejected.connect(self._closing)
+        self.accepted.connect(self._accepting)
+        self.rejected.connect(self._rejecting)
         self._actionLinkSelected.triggered.connect(self._linkSelected)
         self._actionUnlinkSelected.triggered.connect(self._unlinkSelected)
         self._actionLinkAll.triggered.connect(self._linkAll)
@@ -462,12 +463,23 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
             return None
         return self._editorContext.mapCanvas()
 
+    def _rejecting(self):
+        self._closing()
+
+    def _accepting(self):
+        # Save join features edits
+        for attributeFormWidget in self._featureFormWidgets:
+            attributeFormWidget.save()
+
+        self._closing()
+
     def _closing(self):
         self._deleteHighlight()
         self._unsetMapTool()
 
     def _updateFeaturesTreeWidgetRight(self):
         self.mFeaturesTreeWidgetRight.clear()
+        self._featureFormWidgets = []
         for featureItem in self._featuresModelRight.get_all_feature_items():
             treeWidgetItem = QTreeWidgetItem(self.mFeaturesTreeWidgetRight)
             treeWidgetItem.setText(0, featureItem.display_string())
@@ -489,3 +501,5 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
                 attributeForm = QgsAttributeForm(joinLayer, joinFeature)
 
                 self.mFeaturesTreeWidgetRight.setItemWidget(treeWidgetItemChildren, 0, attributeForm)
+
+                self._featureFormWidgets.append(attributeForm)
