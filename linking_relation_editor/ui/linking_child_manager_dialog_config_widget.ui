@@ -29,21 +29,7 @@
       <string>Linking Dialog Configuration</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
-      <item row="0" column="0">
-       <widget class="QCheckBox" name="mCheckBoxAllowMultipleLinking">
-        <property name="text">
-         <string>Allow multiple linking of the same feature</string>
-        </property>
-       </widget>
-      </item>
       <item row="1" column="0">
-       <widget class="QCheckBox" name="mCheckBoxShowAndEditJoinTableAttributes">
-        <property name="text">
-         <string>Show and edit join table attributes</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
        <spacer name="verticalSpacer">
         <property name="orientation">
          <enum>Qt::Vertical</enum>
@@ -55,6 +41,13 @@
          </size>
         </property>
        </spacer>
+      </item>
+      <item row="0" column="0">
+       <widget class="QCheckBox" name="mCheckBoxShowAndEditJoinTableAttributes">
+        <property name="text">
+         <string>Show and edit join table attributes</string>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>

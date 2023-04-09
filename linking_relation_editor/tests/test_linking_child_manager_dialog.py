@@ -1,5 +1,5 @@
-from qgis.PyQt.QtCore import Qt
 from qgis.core import QgsFeature, QgsProject, QgsRelation, QgsVectorLayer
+from qgis.PyQt.QtCore import Qt
 from qgis.testing import start_app, unittest
 
 from linking_relation_editor.gui.linking_child_manager_dialog import (
@@ -121,7 +121,6 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
         QgsProject.instance().removeMapLayer(self.mLayerJoin)
 
     def test_Instantiate(self):
-
         childLayer = QgsVectorLayer("Point?crs=epsg:4326&field=int:integer&field=int2:integer", "childLayer", "memory")
         self.assertTrue(childLayer.isValid())
 
@@ -131,13 +130,12 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
         self.assertTrue(parentLayer.isValid())
 
         dialog = LinkingChildManagerDialog(
-            childLayer, parentLayer, QgsFeature(), QgsRelation(), QgsRelation(), False, None
+            childLayer, parentLayer, QgsFeature(), QgsRelation(), QgsRelation(), False, {}, None
         )
 
         self.assertEqual(dialog.mLayerNameLabel.text(), childLayer.name())
 
     def test_InstantiateRelation1N(self):
-
         parentFeature = QgsFeature()
         for feature in self.mLayer2.getFeatures():
             parentFeature = feature
@@ -145,12 +143,13 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
 
         self.assertTrue(parentFeature.isValid())
 
-        dialog = LinkingChildManagerDialog(self.mLayer1, self.mLayer2, parentFeature, self.mRelation, QgsRelation(), False, None)
+        dialog = LinkingChildManagerDialog(
+            self.mLayer1, self.mLayer2, parentFeature, self.mRelation, QgsRelation(), False, {}, None
+        )
 
         self.assertEqual(dialog.mLayerNameLabel.text(), self.mLayer1.name())
 
     def test_InstantiateRelationNM(self):
-
         parentFeature = QgsFeature()
         for feature in self.mLayer1.getFeatures():
             parentFeature = feature
@@ -159,13 +158,12 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
         self.assertTrue(parentFeature.isValid())
 
         dialog = LinkingChildManagerDialog(
-            self.mLayer2, self.mLayer1, parentFeature, self.mRelation1N, self.mRelationNM, False, None
+            self.mLayer2, self.mLayer1, parentFeature, self.mRelation1N, self.mRelationNM, False, {}, None
         )
 
         self.assertEqual(dialog.mLayerNameLabel.text(), self.mLayer2.name())
-    
+
     def test_quickFilter(self):
-    
         # get a parent with no childs
         parentFeature = QgsFeature()
         for feature in self.mLayer2.getFeatures():
@@ -175,64 +173,103 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
 
         self.assertTrue(parentFeature.isValid())
 
-        dialog = LinkingChildManagerDialog(self.mLayer1, self.mLayer2, parentFeature, self.mRelation, QgsRelation(), False, None)
+        dialog = LinkingChildManagerDialog(
+            self.mLayer1, self.mLayer2, parentFeature, self.mRelation, QgsRelation(), False, {}, None
+        )
 
         self.assertEqual(dialog.mLayerNameLabel.text(), self.mLayer1.name())
 
-
         # all entries
-        # "Layer1-0: The Artist formerly known as Prince" 
+        # "Layer1-0: The Artist formerly known as Prince"
         # "Layer1-1: Martina formerly known as Prisca"
         self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 2)
-        self.assertEqual( dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole), "Layer1-0: The Artist formerly known as Prince")
-        self.assertEqual( dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.DisplayRole), "Layer1-1: Martina formerly known as Prisca" )
-
+        self.assertEqual(
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole),
+            "Layer1-0: The Artist formerly known as Prince",
+        )
+        self.assertEqual(
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.DisplayRole),
+            "Layer1-1: Martina formerly known as Prisca",
+        )
 
         dialog._featuresModelFilterLeft.set_quick_filter("Prince")
         # "Layer1-0: The Artist formerly known as *Prince*"
         # no "Prince" in the other entry
         self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 1)
-        self.assertEqual( dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole), "Layer1-0: The Artist formerly known as Prince")
+        self.assertEqual(
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole),
+            "Layer1-0: The Artist formerly known as Prince",
+        )
 
         dialog._featuresModelFilterLeft.set_quick_filter("formerly")
-        # "Layer1-0: The Artist *formerly* known as Prince" 
+        # "Layer1-0: The Artist *formerly* known as Prince"
         # "Layer1-1: Martina *formerly* known as Prisca"
         self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 2)
-        self.assertEqual( dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole), "Layer1-0: The Artist formerly known as Prince")
-        self.assertEqual( dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.DisplayRole), "Layer1-1: Martina formerly known as Prisca" )
+        self.assertEqual(
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole),
+            "Layer1-0: The Artist formerly known as Prince",
+        )
+        self.assertEqual(
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.DisplayRole),
+            "Layer1-1: Martina formerly known as Prisca",
+        )
 
         dialog._featuresModelFilterLeft.set_quick_filter("formerly Pri")
-        # "Layer1-0: The Artist *formerly* known as *Pri*nce" 
+        # "Layer1-0: The Artist *formerly* known as *Pri*nce"
         # "Layer1-1: Martina *formerly* known as *Pri*sca"
         self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 2)
-        self.assertEqual( dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole), "Layer1-0: The Artist formerly known as Prince")
-        self.assertEqual( dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.DisplayRole), "Layer1-1: Martina formerly known as Prisca" )
+        self.assertEqual(
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole),
+            "Layer1-0: The Artist formerly known as Prince",
+        )
+        self.assertEqual(
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.DisplayRole),
+            "Layer1-1: Martina formerly known as Prisca",
+        )
 
         dialog._featuresModelFilterLeft.set_quick_filter("formerly Pri art")
-        # "Layer1-0: The *Art*ist *formerly* known as *Pri*nce" 
+        # "Layer1-0: The *Art*ist *formerly* known as *Pri*nce"
         # "Layer1-1: M*art*ina *formerly* known as *Pri*sca"
         self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 2)
-        self.assertEqual( dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole), "Layer1-0: The Artist formerly known as Prince")
-        self.assertEqual( dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.DisplayRole), "Layer1-1: Martina formerly known as Prisca" )
+        self.assertEqual(
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole),
+            "Layer1-0: The Artist formerly known as Prince",
+        )
+        self.assertEqual(
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.DisplayRole),
+            "Layer1-1: Martina formerly known as Prisca",
+        )
 
         dialog._featuresModelFilterLeft.set_quick_filter("formerly Pri art the")
         # "Layer1-0: *The* *Art*ist *formerly* known as *Pri*nce"
         # no "the" in the other entry
         self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 1)
-        self.assertEqual( dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole), "Layer1-0: The Artist formerly known as Prince")
+        self.assertEqual(
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole),
+            "Layer1-0: The Artist formerly known as Prince",
+        )
 
         dialog._featuresModelFilterLeft.set_quick_filter("formerly Pri Mar")
         # "Layer1-1: *Mar*tina *formerly* known as *Pri*sca"
         self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 1)
-        self.assertEqual( dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole), "Layer1-1: Martina formerly known as Prisca" )
+        self.assertEqual(
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole),
+            "Layer1-1: Martina formerly known as Prisca",
+        )
 
         dialog._featuresModelFilterLeft.set_quick_filter("formerly Pri Charles")
         # no "Charles"
         self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 0)
 
         dialog._featuresModelFilterLeft.set_quick_filter("")
-        # "Layer1-0: The Artist formerly known as Prince" 
+        # "Layer1-0: The Artist formerly known as Prince"
         # "Layer1-1: Martina formerly known as Prisca"
         self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 2)
-        self.assertEqual( dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole), "Layer1-0: The Artist formerly known as Prince")
-        self.assertEqual( dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.DisplayRole), "Layer1-1: Martina formerly known as Prisca" )
+        self.assertEqual(
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole),
+            "Layer1-0: The Artist formerly known as Prince",
+        )
+        self.assertEqual(
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.DisplayRole),
+            "Layer1-1: Martina formerly known as Prisca",
+        )

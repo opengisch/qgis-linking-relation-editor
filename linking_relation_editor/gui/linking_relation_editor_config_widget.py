@@ -15,6 +15,10 @@ from qgis.PyQt.QtWidgets import QComboBox, QFormLayout
 from linking_relation_editor.gui.linking_child_manager_dialog_config_widget import (
     LinkingChildManagerDialogConfigWidget,
 )
+from linking_relation_editor.gui.linking_relation_editor_widget import (
+    CONFIG_LINKING_CHILD_MANAGER_DIALOG,
+    CONFIG_ONE_TO_ONE,
+)
 
 
 class LinkingRelationEditorConfigWidget(QgsRelationEditorConfigWidget):
@@ -59,7 +63,7 @@ class LinkingRelationEditorConfigWidget(QgsRelationEditorConfigWidget):
             formLayout.insertRow(5, self.linkingChildManagerDialogConfigWidget)
 
     def setConfig(self, config):
-        one_to_one = config.get("one_to_one", False)
+        one_to_one = config.get(CONFIG_ONE_TO_ONE, False)
         if one_to_one:
             index = self.__relation_cardinality_combobox.findData(
                 LinkingRelationEditorConfigWidget.USER_DATA_ONE_TO_ONE
@@ -68,15 +72,15 @@ class LinkingRelationEditorConfigWidget(QgsRelationEditorConfigWidget):
                 self.__relation_cardinality_combobox.setCurrentIndex(index)
 
         if self.linkingChildManagerDialogConfigWidget:
-            self.linkingChildManagerDialogConfigWidget.setConfig(config.get("linking_child_manager_dialog"))
+            self.linkingChildManagerDialogConfigWidget.setConfig(config.get(CONFIG_LINKING_CHILD_MANAGER_DIALOG))
 
         config = super().setConfig(config)
 
     def config(self):
         config = super().config()
-        config["one_to_one"] = (
+        config[CONFIG_ONE_TO_ONE] = (
             self.__relation_cardinality_combobox.currentData() == LinkingRelationEditorConfigWidget.USER_DATA_ONE_TO_ONE
         )
         if self.linkingChildManagerDialogConfigWidget:
-            config["linking_child_manager_dialog"] = self.linkingChildManagerDialogConfigWidget.config()
+            config[CONFIG_LINKING_CHILD_MANAGER_DIALOG] = self.linkingChildManagerDialogConfigWidget.config()
         return config

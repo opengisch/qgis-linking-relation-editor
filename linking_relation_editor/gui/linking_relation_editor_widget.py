@@ -51,6 +51,9 @@ WidgetUi, _ = loadUiType(os.path.join(os.path.dirname(__file__), "../ui/linking_
 
 Debug = True
 
+CONFIG_ONE_TO_ONE = "one_to_one"
+CONFIG_LINKING_CHILD_MANAGER_DIALOG = "linking_child_manager_dialog"
+
 
 class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
     class MultiEditFeatureType(IntEnum):
@@ -167,6 +170,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         self.mMultiEditTreeWidget.itemSelectionChanged.connect(self.multiEditItemSelectionChanged)
 
         self.mOneToOne = False
+        self.mLinkingChildManagerDialogConfig = {}
 
         self.mMapToolDigitize = None
         self.mMessageBarItem = None
@@ -180,7 +184,8 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         return {
             "buttons": metaEnumFromValue(QgsRelationEditorWidget.Button.AllButtons).valueToKeys(self.visibleButtons()),
             "show_first_feature": self.mShowFirstFeature,
-            "one_to_one": self.mOneToOne,
+            CONFIG_ONE_TO_ONE: self.mOneToOne,
+            CONFIG_LINKING_CHILD_MANAGER_DIALOG: self.mLinkingChildManagerDialogConfig,
         }
 
     def setConfig(self, config):
@@ -189,7 +194,8 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
             config.get("buttons", metaEnumButtons.valueToKeys(QgsRelationEditorWidget.Button.AllButtons))
         )
         self.mShowFirstFeature = config.get("show_first_feature", True)
-        self.mOneToOne = config.get("one_to_one")
+        self.mOneToOne = config.get(CONFIG_ONE_TO_ONE)
+        self.mLinkingChildManagerDialogConfig = config.get(CONFIG_LINKING_CHILD_MANAGER_DIALOG, {})
         self.updateButtons()
 
     def initDualView(self, layer, request):
@@ -560,6 +566,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
             self.nmRelation(),
             self.editorContext(),
             self.mOneToOne,
+            self.mLinkingChildManagerDialogConfig,
             self,
         )
         relationEditorLinkChildManagerDialog.accepted.connect(self._relationEditorLinkChildManagerDialogAccepted)

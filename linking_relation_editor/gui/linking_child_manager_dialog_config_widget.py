@@ -13,6 +13,10 @@ import os
 from qgis.PyQt.QtWidgets import QDialog
 from qgis.PyQt.uic import loadUiType
 
+from linking_relation_editor.gui.linking_child_manager_dialog import (
+    CONFIG_SHOW_AND_EDIT_JOIN_TABLE_ATTRIBUTES,
+)
+
 WidgetUi, _ = loadUiType(os.path.join(os.path.dirname(__file__), "../ui/linking_child_manager_dialog_config_widget.ui"))
 
 
@@ -30,13 +34,11 @@ class LinkingChildManagerDialogConfigWidget(QDialog, WidgetUi):
         if config is None:
             config = {}
 
-        self.mCheckBoxAllowMultipleLinking.setChecked(config.get("allow_multiple_linking_of_same_feature", False))
         self.mCheckBoxShowAndEditJoinTableAttributes.setChecked(
-            config.get("show_and_edit_join_table_attributes", False)
+            config.get(CONFIG_SHOW_AND_EDIT_JOIN_TABLE_ATTRIBUTES, False)
         )
 
     def config(self):
         return {
-            "allow_multiple_linking_of_same_feature": self.mCheckBoxAllowMultipleLinking.isChecked(),
-            "show_and_edit_join_table_attributes": self.mCheckBoxShowAndEditJoinTableAttributes.isChecked(),
+            CONFIG_SHOW_AND_EDIT_JOIN_TABLE_ATTRIBUTES: self.mCheckBoxShowAndEditJoinTableAttributes.isChecked(),
         }

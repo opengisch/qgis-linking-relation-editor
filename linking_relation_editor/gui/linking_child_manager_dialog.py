@@ -37,6 +37,8 @@ from linking_relation_editor.gui.map_tool_select_rectangle import MapToolSelectR
 
 WidgetUi, _ = loadUiType(os.path.join(os.path.dirname(__file__), "../ui/linking_child_manager_dialog.ui"))
 
+CONFIG_SHOW_AND_EDIT_JOIN_TABLE_ATTRIBUTES = "show_and_edit_join_table_attributes"
+
 
 class LinkingChildManagerDialog(QDialog, WidgetUi):
     def __init__(
@@ -48,6 +50,7 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
         nmRelation: QgsRelation,
         editorContext: QgsAttributeEditorContext,
         oneToOne: bool,
+        config: dict,
         parent=None,
     ):
         super().__init__(parent)
@@ -59,6 +62,7 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
         self._nmRelation = nmRelation
         self._editorContext = editorContext
         self._oneToOne = oneToOne
+        self._config = config
 
         self._mapToolSelect = None
         if self._canvas():
@@ -468,8 +472,9 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
 
     def _accepting(self):
         # Save join features edits
-        for attributeFormWidget in self._featureFormWidgets:
-            attributeFormWidget.save()
+        if self._config.get(CONFIG_SHOW_AND_EDIT_JOIN_TABLE_ATTRIBUTES, False):
+            for attributeFormWidget in self._featureFormWidgets:
+                attributeFormWidget.save()
 
         self._closing()
 
@@ -480,13 +485,14 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
     def _updateFeaturesTreeWidgetRight(self):
         self.mFeaturesTreeWidgetRight.clear()
         self._featureFormWidgets = []
+
         for featureItem in self._featuresModelRight.get_all_feature_items():
             treeWidgetItem = QTreeWidgetItem(self.mFeaturesTreeWidgetRight)
             treeWidgetItem.setText(0, featureItem.display_string())
             treeWidgetItem.setIcon(0, featureItem.display_icon())
             self.mFeaturesTreeWidgetRight.addTopLevelItem(treeWidgetItem)
 
-            if self._nmRelation.isValid():
+            if self._nmRelation.isValid() and self._config.get(CONFIG_SHOW_AND_EDIT_JOIN_TABLE_ATTRIBUTES, False):
                 treeWidgetItemChildren = QTreeWidgetItem(treeWidgetItem)
                 treeWidgetItem.addChild(treeWidgetItemChildren)
 
