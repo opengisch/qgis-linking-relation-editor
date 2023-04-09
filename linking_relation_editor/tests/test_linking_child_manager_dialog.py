@@ -1,4 +1,10 @@
-from qgis.core import QgsFeature, QgsProject, QgsRelation, QgsVectorLayer
+from qgis.core import (
+    QgsAttributeEditorContext,
+    QgsFeature,
+    QgsProject,
+    QgsRelation,
+    QgsVectorLayer,
+)
 from qgis.PyQt.QtCore import Qt
 from qgis.testing import start_app, unittest
 
@@ -130,7 +136,15 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
         self.assertTrue(parentLayer.isValid())
 
         dialog = LinkingChildManagerDialog(
-            childLayer, parentLayer, QgsFeature(), QgsRelation(), QgsRelation(), False, {}, None
+            childLayer,
+            parentLayer,
+            QgsFeature(),
+            QgsRelation(),
+            QgsRelation(),
+            QgsAttributeEditorContext(),
+            False,
+            {},
+            None,
         )
 
         self.assertEqual(dialog.mLayerNameLabel.text(), childLayer.name())
@@ -144,7 +158,15 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
         self.assertTrue(parentFeature.isValid())
 
         dialog = LinkingChildManagerDialog(
-            self.mLayer1, self.mLayer2, parentFeature, self.mRelation, QgsRelation(), False, {}, None
+            self.mLayer1,
+            self.mLayer2,
+            parentFeature,
+            self.mRelation,
+            QgsRelation(),
+            QgsAttributeEditorContext(),
+            False,
+            {},
+            None,
         )
 
         self.assertEqual(dialog.mLayerNameLabel.text(), self.mLayer1.name())
@@ -158,7 +180,15 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
         self.assertTrue(parentFeature.isValid())
 
         dialog = LinkingChildManagerDialog(
-            self.mLayer2, self.mLayer1, parentFeature, self.mRelation1N, self.mRelationNM, False, {}, None
+            self.mLayer2,
+            self.mLayer1,
+            parentFeature,
+            self.mRelation1N,
+            self.mRelationNM,
+            QgsAttributeEditorContext(),
+            False,
+            {},
+            None,
         )
 
         self.assertEqual(dialog.mLayerNameLabel.text(), self.mLayer2.name())
@@ -174,7 +204,15 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
         self.assertTrue(parentFeature.isValid())
 
         dialog = LinkingChildManagerDialog(
-            self.mLayer1, self.mLayer2, parentFeature, self.mRelation, QgsRelation(), False, {}, None
+            self.mLayer1,
+            self.mLayer2,
+            parentFeature,
+            self.mRelation,
+            QgsRelation(),
+            QgsAttributeEditorContext(),
+            False,
+            {},
+            None,
         )
 
         self.assertEqual(dialog.mLayerNameLabel.text(), self.mLayer1.name())
