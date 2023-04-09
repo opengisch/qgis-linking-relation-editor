@@ -1,10 +1,5 @@
-from qgis.core import (
-    QgsAttributeEditorContext,
-    QgsFeature,
-    QgsProject,
-    QgsRelation,
-    QgsVectorLayer,
-)
+from qgis.core import QgsFeature, QgsProject, QgsRelation, QgsVectorLayer
+from qgis.gui import QgsAttributeEditorContext
 from qgis.PyQt.QtCore import Qt
 from qgis.testing import start_app, unittest
 
