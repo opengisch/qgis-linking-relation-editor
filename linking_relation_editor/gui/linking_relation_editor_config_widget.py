@@ -42,6 +42,7 @@ class LinkingRelationEditorConfigWidget(QgsRelationEditorConfigWidget):
             )
 
         # Insert the linking dialog config widget in the layout
+        self.linkingChildManagerDialogConfigWidget = None
         formLayout = None
         formLayoutName = "formLayout"
         formLayouts = self.parent().findChildren(QFormLayout)
@@ -53,19 +54,21 @@ class LinkingRelationEditorConfigWidget(QgsRelationEditorConfigWidget):
         if formLayout is None:
             QgsLogger.warning(self.tr("QFormLayout with object name '{}' not found".format(formLayout)))
         else:
-            linkingChildManagerDialogConfigWidget = LinkingChildManagerDialogConfigWidget()
+            self.linkingChildManagerDialogConfigWidget = LinkingChildManagerDialogConfigWidget()
 
-            formLayout.insertRow(5, linkingChildManagerDialogConfigWidget)
+            formLayout.insertRow(5, self.linkingChildManagerDialogConfigWidget)
 
     def setConfig(self, config):
         one_to_one = config.get("one_to_one", False)
-
         if one_to_one:
             index = self.__relation_cardinality_combobox.findData(
                 LinkingRelationEditorConfigWidget.USER_DATA_ONE_TO_ONE
             )
             if index != -1:
                 self.__relation_cardinality_combobox.setCurrentIndex(index)
+
+        if self.linkingChildManagerDialogConfigWidget:
+            self.linkingChildManagerDialogConfigWidget.setConfig(config.get("linking_child_manager_dialog"))
 
         config = super().setConfig(config)
 
@@ -74,4 +77,6 @@ class LinkingRelationEditorConfigWidget(QgsRelationEditorConfigWidget):
         config["one_to_one"] = (
             self.__relation_cardinality_combobox.currentData() == LinkingRelationEditorConfigWidget.USER_DATA_ONE_TO_ONE
         )
+        if self.linkingChildManagerDialogConfigWidget:
+            config["linking_child_manager_dialog"] = self.linkingChildManagerDialogConfigWidget.config()
         return config

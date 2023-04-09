@@ -25,3 +25,18 @@ class LinkingChildManagerDialogConfigWidget(QDialog, WidgetUi):
 
         # Ui setup
         self.setupUi(self)
+
+    def setConfig(self, config):
+        if config is None:
+            config = {}
+
+        self.mCheckBoxAllowMultipleLinking.setChecked(config.get("allow_multiple_linking_of_same_feature", False))
+        self.mCheckBoxShowAndEditJoinTableAttributes.setChecked(
+            config.get("show_and_edit_join_table_attributes", False)
+        )
+
+    def config(self):
+        return {
+            "allow_multiple_linking_of_same_feature": self.mCheckBoxAllowMultipleLinking.isChecked(),
+            "show_and_edit_join_table_attributes": self.mCheckBoxShowAndEditJoinTableAttributes.isChecked(),
+        }
