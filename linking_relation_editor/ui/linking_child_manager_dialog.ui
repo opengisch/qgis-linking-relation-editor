@@ -143,10 +143,18 @@
       </widget>
      </item>
      <item row="1" column="0" colspan="2">
-      <widget class="QListView" name="mFeaturesListViewRight">
+      <widget class="QTreeWidget" name="mFeaturesTreeWidgetRight">
        <property name="selectionMode">
         <enum>QAbstractItemView::ExtendedSelection</enum>
        </property>
+       <attribute name="headerVisible">
+        <bool>false</bool>
+       </attribute>
+       <column>
+        <property name="text">
+         <string notr="true">1</string>
+        </property>
+       </column>
       </widget>
      </item>
     </layout>
