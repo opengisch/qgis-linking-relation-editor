@@ -50,7 +50,7 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
         nmRelation: QgsRelation,
         editorContext: QgsAttributeEditorContext,
         oneToOne: bool,
-        config: dict,
+        linkingChildManagerDialogConfig: dict,
         parent=None,
     ):
         super().__init__(parent)
@@ -62,7 +62,7 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
         self._nmRelation = nmRelation
         self._editorContext = editorContext
         self._oneToOne = oneToOne
-        self._config = config
+        self._linkingChildManagerDialogConfig = linkingChildManagerDialogConfig
 
         self._mapToolSelect = None
         if self._canvas():
@@ -472,7 +472,7 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
 
     def _accepting(self):
         # Save join features edits
-        if self._config.get(CONFIG_SHOW_AND_EDIT_JOIN_TABLE_ATTRIBUTES, False):
+        if self._linkingChildManagerDialogConfig.get(CONFIG_SHOW_AND_EDIT_JOIN_TABLE_ATTRIBUTES, False):
             for attributeFormWidget in self._featureFormWidgets:
                 attributeFormWidget.save()
 
@@ -492,7 +492,9 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
             treeWidgetItem.setIcon(0, featureItem.display_icon())
             self.mFeaturesTreeWidgetRight.addTopLevelItem(treeWidgetItem)
 
-            if self._nmRelation.isValid() and self._config.get(CONFIG_SHOW_AND_EDIT_JOIN_TABLE_ATTRIBUTES, False):
+            if self._nmRelation.isValid() and self._linkingChildManagerDialogConfig.get(
+                CONFIG_SHOW_AND_EDIT_JOIN_TABLE_ATTRIBUTES, False
+            ):
                 treeWidgetItemChildren = QTreeWidgetItem(treeWidgetItem)
                 treeWidgetItem.addChild(treeWidgetItemChildren)
 
