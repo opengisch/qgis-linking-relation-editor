@@ -533,8 +533,6 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
                         index = fields.indexOf(referencingField)
                         joinFeature[index] = featureItem.feature().attribute(referencedField)
 
-                featureItem.set_join_feature(joinFeature)
-
                 attributeForm = QgsAttributeForm(joinLayer, joinFeature)
 
                 if featureItem.feature_state() == FeaturesModel.FeatureState.ToBeLinked:

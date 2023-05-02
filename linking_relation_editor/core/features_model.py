@@ -39,7 +39,6 @@ class FeaturesModel(QAbstractListModel):
             self._featureState = featureState
             self._layer = layer
             self._displayString = QgsVectorLayerUtils.getFeatureDisplayString(layer, feature)
-            self._joinFeature = None
 
         def feature(self):
             return self._feature
@@ -75,12 +74,6 @@ class FeaturesModel(QAbstractListModel):
             subContext.setFeature(self._feature)
 
             return QgsExpression.replaceExpressionText(self._layer.mapTipTemplate(), subContext)
-
-        def join_feature(self):
-            return self._joinFeature
-
-        def set_join_feature(self, joinFeature):
-            self._joinFeature = joinFeature
 
     def __init__(self, features, featureState, layer: QgsVectorLayer, parent: QObject = None):
         super().__init__(parent)
