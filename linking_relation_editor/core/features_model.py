@@ -39,6 +39,7 @@ class FeaturesModel(QAbstractListModel):
             self._featureState = featureState
             self._layer = layer
             self._displayString = QgsVectorLayerUtils.getFeatureDisplayString(layer, feature)
+            self._joinFeature = None
 
         def feature(self):
             return self._feature
@@ -75,6 +76,12 @@ class FeaturesModel(QAbstractListModel):
 
             return QgsExpression.replaceExpressionText(self._layer.mapTipTemplate(), subContext)
 
+        def join_feature(self):
+            return self._joinFeature
+
+        def set_join_feature(self, joinFeature):
+            self._joinFeature = joinFeature
+
     def __init__(self, features, featureState, layer: QgsVectorLayer, parent: QObject = None):
         super().__init__(parent)
 
@@ -86,7 +93,6 @@ class FeaturesModel(QAbstractListModel):
         return len(self._modelFeatures)
 
     def data(self, index: QModelIndex, role: int = ...):
-
         if not index.isValid():
             return None
 
@@ -105,7 +111,6 @@ class FeaturesModel(QAbstractListModel):
         return None
 
     def removeRows(self, row: int = ..., count: int = ..., index: QModelIndex = ...):
-
         if row + count > self.rowCount():
             return False
 
@@ -142,7 +147,6 @@ class FeaturesModel(QAbstractListModel):
         return featureModelElements
 
     def take_item(self, index: QModelIndex):
-
         if not index.isValid():
             return None
 
@@ -154,7 +158,6 @@ class FeaturesModel(QAbstractListModel):
         return feature
 
     def take_items(self, indexes):
-
         if not indexes:
             return []
 

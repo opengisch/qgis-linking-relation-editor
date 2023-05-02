@@ -14,6 +14,7 @@ from qgis.core import (
     QgsApplication,
     QgsFeature,
     QgsFeatureRequest,
+    QgsGeometry,
     QgsRelation,
     QgsVectorLayer,
     QgsVectorLayerUtils,
@@ -505,8 +506,39 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
                     request = self._nmRelation.getRelatedFeaturesRequest(featureItem.feature())
                     for jfeature in joinLayer.getFeatures(request):
                         joinFeature = jfeature
+                        break
+                else:
+                    treeWidgetItem.setExpanded(True)
+
+                    # Expression context for the linking table
+                    context = joinLayer.createExpressionContext()
+                    joinFeature = QgsVectorLayerUtils.createFeature(joinLayer, QgsGeometry(), {}, context)
+
+                    # Fields of the linking table
+                    fields = joinLayer.fields()
+
+                    if self._relation.type() == QgsRelation.Generated:
+                        polyRel = self._relation.polymorphicRelation()
+                        assert polyRel.isValid()
+
+                        joinFeature[fields.indexFromName(polyRel.referencedLayerField())] = polyRel.layerRepresentation(
+                            self.relation().referencedLayer()
+                        )
+
+                    for referencingField, referencedField in self._relation.fieldPairs().items():
+                        index = fields.indexOf(referencingField)
+                        joinFeature[index] = self._parentFeature.attribute(referencedField)
+
+                    for referencingField, referencedField in self._nmRelation.fieldPairs().items():
+                        index = fields.indexOf(referencingField)
+                        joinFeature[index] = featureItem.feature().attribute(referencedField)
+
+                featureItem.set_join_feature(joinFeature)
 
                 attributeForm = QgsAttributeForm(joinLayer, joinFeature)
+
+                if featureItem.feature_state() == FeaturesModel.FeatureState.ToBeLinked:
+                    attributeForm.setMode(QgsAttributeEditorContext.AddFeatureMode)
 
                 self.mFeaturesTreeWidgetRight.setItemWidget(treeWidgetItemChildren, 0, attributeForm)
 

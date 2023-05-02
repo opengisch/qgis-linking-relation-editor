@@ -44,6 +44,7 @@ from linking_relation_editor.gui.filtered_selection_manager import (
     FilteredSelectionManager,
 )
 from linking_relation_editor.gui.linking_child_manager_dialog import (
+    CONFIG_SHOW_AND_EDIT_JOIN_TABLE_ATTRIBUTES,
     LinkingChildManagerDialog,
 )
 
@@ -797,9 +798,19 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
     def _relationEditorLinkChildManagerDialogAccepted(self):
         relationEditorLinkChildManagerDialog = self.sender()
 
-        # Link/unlink features
+        # Unlink features
         self.unlinkFeatures(relationEditorLinkChildManagerDialog.get_feature_ids_to_unlink())
-        self._linkFeatures(relationEditorLinkChildManagerDialog.get_feature_ids_to_link())
+
+        # If "show and edit join table attributes" is activated, the link is done in the linking childe manager dialog
+        if self.mLinkingChildManagerDialogConfig.get(CONFIG_SHOW_AND_EDIT_JOIN_TABLE_ATTRIBUTES, False):
+            self.updateUi()
+
+            # relatedFeaturesChanged available since QGIS 3.24
+            if Qgis.QGIS_VERSION_INT >= 32400:
+                self.relatedFeaturesChanged.emit()
+        else:
+            # Link features
+            self._linkFeatures(relationEditorLinkChildManagerDialog.get_feature_ids_to_link())
 
         relationEditorLinkChildManagerDialog.deleteLater()
 
