@@ -18,11 +18,8 @@ from linking_relation_editor.gui.linking_relation_editor_widget_factory import (
     LinkingRelationEditorWidgetFactory,
 )
 
-DEBUG = True
-
 
 class LinkingRelationEditorPlugin(QObject):
-
     plugin_name = "&Linking Relation Editor"
 
     def __init__(self, iface: QgisInterface):
