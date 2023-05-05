@@ -361,6 +361,9 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         else:
             self.updateUiSingleEdit()
 
+    def parentFormValueChanged(self, attribute, newValue):
+        pass
+
     def updateUiSingleEdit(self):
         self.mFormViewButton.setVisible(not self.mOneToOne)
         self.mTableViewButton.setVisible(not self.mOneToOne)
