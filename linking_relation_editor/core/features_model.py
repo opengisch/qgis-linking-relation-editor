@@ -19,11 +19,11 @@ from qgis.core import (
     QgsVectorLayer,
     QgsVectorLayerUtils,
 )
-from qgis.PyQt.QtCore import QAbstractListModel, QModelIndex, QObject, Qt
+from qgis.PyQt.QtCore import QAbstractItemModel, QModelIndex, QObject, Qt
 from qgis.PyQt.QtGui import QIcon
 
 
-class FeaturesModel(QAbstractListModel):
+class FeaturesModel(QAbstractItemModel):
     class UserRole(IntEnum):
         FeatureId = Qt.UserRole + 1
 
@@ -39,6 +39,7 @@ class FeaturesModel(QAbstractListModel):
             self._featureState = featureState
             self._layer = layer
             self._displayString = QgsVectorLayerUtils.getFeatureDisplayString(layer, feature)
+            self._childItem = None
 
         def feature(self):
             return self._feature
@@ -75,6 +76,20 @@ class FeaturesModel(QAbstractListModel):
 
             return QgsExpression.replaceExpressionText(self._layer.mapTipTemplate(), subContext)
 
+        def childItem(self):
+            return self._childItem
+
+    def JoinFeaturesModelItem(object):
+        def __init__(self, joinFeature: QgsFeature, parentItem: FeaturesModel.FeaturesModelItem):
+            self._feature = joinFeature
+            self._parentItem = parentItem
+
+        def parentItem(self):
+            return self._parentItem
+
+        def row(self) -> int:
+            return 0  # There is alway only one link feature
+
     def __init__(self, features, featureState, layer: QgsVectorLayer, parent: QObject = None):
         super().__init__(parent)
 
@@ -82,8 +97,18 @@ class FeaturesModel(QAbstractListModel):
         self._modelFeatures = []
         self.set_features(features, featureState)
 
-    def rowCount(self, index: QModelIndex = ...) -> int:
+    def rowCount(self, index=QModelIndex()) -> int:
+        if index.isValid():
+            parentItem = index.internalPointer()
+            if parentItem.childItem() is None:
+                return 0
+            else:
+                return 1
+
         return len(self._modelFeatures)
+
+    def columnCount(self, index: QModelIndex = ...) -> int:
+        return 1
 
     def data(self, index: QModelIndex, role: int = ...):
         if not index.isValid():
@@ -102,6 +127,31 @@ class FeaturesModel(QAbstractListModel):
             return self._modelFeatures[index.row()].feature_id()
 
         return None
+
+    def index(self, row: int, column: int, parent: QModelIndex = ...) -> QModelIndex:
+        if not self.hasIndex(row, column, parent):
+            return QModelIndex()
+
+        parentItem = None
+        if parent.isValid():
+            parentItem = parent.internalPointer()
+
+        if parentItem is None:
+            return self.createIndex(row, column, self._modelFeatures[row])
+
+        return self.createIndex(row, column, self._modelFeatures[row].childItem())
+
+    def parent(self, index: QModelIndex):
+        if not index.isValid():
+            return QModelIndex()
+
+        childItem = index.internalPointer()
+
+        if isinstance(childItem, self.FeaturesModelItem):
+            return QModelIndex()
+
+        parentItem = childItem.parentItem()
+        return self.createIndex(parentItem.row(), 0, parentItem)
 
     def removeRows(self, row: int = ..., count: int = ..., index: QModelIndex = ...):
         if row + count > self.rowCount():
