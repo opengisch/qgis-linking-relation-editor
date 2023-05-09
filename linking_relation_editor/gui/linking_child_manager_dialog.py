@@ -31,8 +31,8 @@ from qgis.PyQt.QtWidgets import QAction, QDialog, QMessageBox, QTreeWidgetItem
 from qgis.PyQt.uic import loadUiType
 from qgis.utils import iface
 
-from linking_relation_editor.core.features_model import FeaturesModel
-from linking_relation_editor.core.features_model_filter import FeaturesModelFilter
+from linking_relation_editor.core.model.features_model import FeaturesModel
+from linking_relation_editor.core.model.features_model_filter import FeaturesModelFilter
 from linking_relation_editor.gui.feature_filter_widget import FeatureFilterWidget
 from linking_relation_editor.gui.map_tool_select_rectangle import MapToolSelectRectangle
 
@@ -144,16 +144,31 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
 
         linkedFeatures, unlinkedFeatures, request = self._getAllFeatures()
 
+        handleJoinFeature = self._linkingChildManagerDialogConfig.get(CONFIG_SHOW_AND_EDIT_JOIN_TABLE_ATTRIBUTES, False)
         self._featuresModelLeft = FeaturesModel(
-            unlinkedFeatures, FeaturesModel.FeatureState.Unlinked, self._layer, self
+            unlinkedFeatures,
+            FeaturesModel.FeatureState.Unlinked,
+            self._layer,
+            handleJoinFeatures=handleJoinFeature,
+            parentFeature=self._parentFeature,
+            relation=self._relation,
+            nmRelation=self._nmRelation,
+            parent=self,
         )
-
         self._featuresModelFilterLeft = FeaturesModelFilter(self._layer, self._canvas(), self)
         self._featuresModelFilterLeft.setSourceModel(self._featuresModelLeft)
-
         self.mFeaturesListViewLeft.setModel(self._featuresModelFilterLeft)
 
-        self._featuresModelRight = FeaturesModel(linkedFeatures, FeaturesModel.FeatureState.Linked, self._layer, self)
+        self._featuresModelRight = FeaturesModel(
+            linkedFeatures,
+            FeaturesModel.FeatureState.Linked,
+            self._layer,
+            handleJoinFeatures=handleJoinFeature,
+            parentFeature=self._parentFeature,
+            relation=self._relation,
+            nmRelation=self._nmRelation,
+            parent=self,
+        )
         self.mFeaturesTreeViewRight.setModel(self._featuresModelRight)
 
         self.mQuickFilterLineEdit.setVisible(False)

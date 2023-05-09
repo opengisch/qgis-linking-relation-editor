@@ -36,7 +36,7 @@ from qgis.PyQt.QtWidgets import (
 )
 from qgis.PyQt.uic import loadUiType
 
-from linking_relation_editor.core.features_model_filter import FeaturesModelFilter
+from linking_relation_editor.core.model.features_model_filter import FeaturesModelFilter
 
 WidgetUi, _ = loadUiType(os.path.join(os.path.dirname(__file__), "../ui/feature_filter_widget.ui"))
 
@@ -404,7 +404,6 @@ class FeatureFilterWidget(QWidget, WidgetUi):
             or not self.mCurrentSearchWidgetWrapper
             or not self.mCurrentSearchWidgetWrapper.applyDirectly()
         ):
-
             self.mFilterButton.setDefaultAction(self.mActionAdvancedFilter)
             self.mFilterButton.setPopupMode(QToolButton.MenuButtonPopup)
             self.mFilterQuery.setVisible(True)
