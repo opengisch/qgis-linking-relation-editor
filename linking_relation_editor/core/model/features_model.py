@@ -21,7 +21,6 @@ from qgis.core import (
     QgsVectorLayer,
     QgsVectorLayerUtils,
 )
-from qgis.gui import QgsAttributeEditorContext, QgsAttributeForm
 from qgis.PyQt.QtCore import QAbstractItemModel, QModelIndex, QObject, Qt
 from qgis.PyQt.QtGui import QIcon
 
@@ -127,10 +126,10 @@ class FeaturesModel(QAbstractItemModel):
             self._layer = joinLayer
             self._parentItem = parentItem
 
-            self._attributeForm = QgsAttributeForm(joinLayer, joinFeature)
+            # self._attributeForm = QgsAttributeForm(joinLayer, joinFeature, QgsAttributeEditorContext(), self)
 
-            if self._parentItem.feature_state() == FeaturesModel.FeatureState.ToBeLinked:
-                self._attributeForm.setMode(QgsAttributeEditorContext.AddFeatureMode)
+            # if self._parentItem.feature_state() == FeaturesModel.FeatureState.ToBeLinked:
+            # self._attributeForm.setMode(QgsAttributeEditorContext.AddFeatureMode)
 
         def parentItem(self):
             return self._parentItem
@@ -140,6 +139,12 @@ class FeaturesModel(QAbstractItemModel):
 
         def childItem(self):
             return None
+
+        def feature(self):
+            return self._feature
+
+        def layer(self):
+            return self._layer
 
     def __init__(
         self,
@@ -193,9 +198,6 @@ class FeaturesModel(QAbstractItemModel):
 
             if role == FeaturesModel.UserRole.FeatureId:
                 return self._modelFeatures[index.row()].feature_id()
-        else:
-            if role == Qt.DisplayRole:
-                return "childItem"
 
         return None
 
@@ -222,6 +224,27 @@ class FeaturesModel(QAbstractItemModel):
 
         parentItem = childItem.parentItem()
         return self.createIndex(parentItem.row(), 0, parentItem)
+
+    def flags(self, index: QModelIndex):
+        if not index.isValid():
+            return Qt.NoItemFlags
+
+        childItem = index.internalPointer()
+        if isinstance(childItem, FeaturesModel.FeaturesModelItem):
+            return Qt.ItemIsSelectable | Qt.ItemIsEnabled
+
+        return Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable
+
+    def getItem(self, index: QModelIndex):
+        if not index.isValid():
+            return None
+
+        # No parent -> normal item
+        if not self.parent(index).isValid():
+            return self._modelFeatures[index.row()]
+
+        # Otherwise, join item
+        return self._modelFeatures[index.row()].childItem()
 
     def removeRows(self, row: int = ..., count: int = ..., index: QModelIndex = ...):
         if row + count > self.rowCount():

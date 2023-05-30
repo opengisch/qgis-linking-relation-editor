@@ -26,11 +26,14 @@ from qgis.gui import (
     QgsIdentifyMenu,
     QgsMessageBar,
 )
-from qgis.PyQt.QtCore import Qt, QTimer
+from qgis.PyQt.QtCore import QModelIndex, Qt, QTimer
 from qgis.PyQt.QtWidgets import QAction, QDialog, QMessageBox, QTreeWidgetItem
 from qgis.PyQt.uic import loadUiType
 from qgis.utils import iface
 
+from linking_relation_editor.core.model.attribute_form_delegate import (
+    AttributeFormDelegate,
+)
 from linking_relation_editor.core.model.features_model import FeaturesModel
 from linking_relation_editor.core.model.features_model_filter import FeaturesModelFilter
 from linking_relation_editor.gui.feature_filter_widget import FeatureFilterWidget
@@ -170,6 +173,8 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
             parent=self,
         )
         self.mFeaturesTreeViewRight.setModel(self._featuresModelRight)
+        self.mFeaturesTreeViewRight.setItemDelegate(AttributeFormDelegate(self._featuresModelRight, self))
+        self.mFeaturesTreeViewRight.expanded.connect(self._treeViewItemExpanded)
 
         self.mQuickFilterLineEdit.setVisible(False)
 
@@ -492,6 +497,16 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
     def _closing(self):
         self._deleteHighlight()
         self._unsetMapTool()
+
+    def _treeViewItemExpanded(self, index: QModelIndex):
+        print("treeViewItemExpanded")
+
+        # For child items do nothing
+        if self._featuresModelRight.parent(index).isValid():
+            return
+
+        childrenIndex = self._featuresModelRight.index(0, 0, index)
+        self.mFeaturesTreeViewRight.openPersistentEditor(childrenIndex)
 
     def _updateFeaturesTreeWidgetRight(self):
         self.mFeaturesTreeViewRight.clear()
