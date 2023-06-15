@@ -125,11 +125,7 @@ class FeaturesModel(QAbstractItemModel):
             self._feature = joinFeature
             self._layer = joinLayer
             self._parentItem = parentItem
-
-            # self._attributeForm = QgsAttributeForm(joinLayer, joinFeature, QgsAttributeEditorContext(), self)
-
-            # if self._parentItem.feature_state() == FeaturesModel.FeatureState.ToBeLinked:
-            # self._attributeForm.setMode(QgsAttributeEditorContext.AddFeatureMode)
+            self._attributeForm = None
 
         def parentItem(self):
             return self._parentItem
@@ -145,6 +141,12 @@ class FeaturesModel(QAbstractItemModel):
 
         def layer(self):
             return self._layer
+
+        def setAttributeForm(self, attributeForm):
+            self._attributeForm = attributeForm
+
+        def attributeForm(self):
+            return self._attributeForm
 
     def __init__(
         self,
@@ -166,6 +168,9 @@ class FeaturesModel(QAbstractItemModel):
         self.nmRelation = nmRelation
 
         self.set_features(features, featureState)
+
+    def featureItems(self):
+        return self._modelFeatures
 
     def rowCount(self, index=QModelIndex()) -> int:
         if index.isValid():
@@ -203,16 +208,44 @@ class FeaturesModel(QAbstractItemModel):
 
     def index(self, row: int, column: int, parent: QModelIndex = ...) -> QModelIndex:
         if not self.hasIndex(row, column, parent):
+            print("Return invalid QModelIndex")
             return QModelIndex()
 
         parentItem = None
         if parent.isValid():
             parentItem = parent.internalPointer()
 
+        print("----------------------------------------------------------------")
+
+        print(
+            "Row/Col: {}/{} Parent row/col: {}/{} PARENT: {}".format(
+                row, column, parent.row(), parent.column(), parentItem
+            )
+        )
+
         if parentItem is None:
+            print(
+                "PARENT createIndex(row={}, column={}, self._modelFeatures[row]={})".format(
+                    row, column, self._modelFeatures[row]
+                )
+            )
             return self.createIndex(row, column, self._modelFeatures[row])
 
-        return self.createIndex(row, column, self._modelFeatures[row].childItem())
+        print(
+            "Row/Col: {}/{} Parent row/col: {}/{} CHILD: {}".format(
+                row, column, parent.row(), parent.column(), parentItem.childItem()
+            )
+        )
+
+        # print("self._modelFeatures[parent.row()].childItem(): {}, parentItem.childItem(): {}".format(self._modelFeatures[parent.row()].childItem(), parentItem.childItem()))
+
+        print(
+            "CHILDREN createIndex(row={}, column={}, parentItem.childItem()={})".format(
+                row, column, parentItem.childItem()
+            )
+        )
+        # return self.createIndex(row, column, self._modelFeatures[row].childItem())
+        return self.createIndex(row, column, parentItem.childItem())
 
     def parent(self, index: QModelIndex):
         if not index.isValid():

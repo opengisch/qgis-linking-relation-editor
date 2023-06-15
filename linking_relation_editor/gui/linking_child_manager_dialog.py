@@ -14,20 +14,18 @@ from qgis.core import (
     QgsApplication,
     QgsFeature,
     QgsFeatureRequest,
-    QgsGeometry,
     QgsRelation,
     QgsVectorLayer,
     QgsVectorLayerUtils,
 )
 from qgis.gui import (
     QgsAttributeEditorContext,
-    QgsAttributeForm,
     QgsHighlight,
     QgsIdentifyMenu,
     QgsMessageBar,
 )
 from qgis.PyQt.QtCore import QModelIndex, Qt, QTimer
-from qgis.PyQt.QtWidgets import QAction, QDialog, QMessageBox, QTreeWidgetItem
+from qgis.PyQt.QtWidgets import QAction, QDialog, QMessageBox
 from qgis.PyQt.uic import loadUiType
 from qgis.utils import iface
 
@@ -73,7 +71,6 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
             self._mapToolSelect = MapToolSelectRectangle(self._canvas(), self._layer)
 
         self._highlight = []
-        self._featureFormWidgets = []
 
         # Ui setup
         self.setupUi(self)
@@ -489,8 +486,9 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
     def _accepting(self):
         # Save join features edits
         if self._linkingChildManagerDialogConfig.get(CONFIG_SHOW_AND_EDIT_JOIN_TABLE_ATTRIBUTES, False):
-            for attributeFormWidget in self._featureFormWidgets:
-                attributeFormWidget.save()
+            for featureItem in self._featuresModelRight.featureItems():
+                if featureItem.childItem() is not None and featureItem.childItem().attributeForm() is not None:
+                    featureItem.childItem().attributeForm().save()
 
         self._closing()
 
@@ -499,70 +497,10 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
         self._unsetMapTool()
 
     def _treeViewItemExpanded(self, index: QModelIndex):
-        print("treeViewItemExpanded")
-
         # For child items do nothing
         if self._featuresModelRight.parent(index).isValid():
             return
-
-        childrenIndex = self._featuresModelRight.index(0, 0, index)
+        print("Item expanded: {} {}".format(index.row(), index.column()))
+        return
+        childrenIndex = self._featuresModelRight.index(index.row(), index.column(), index)
         self.mFeaturesTreeViewRight.openPersistentEditor(childrenIndex)
-
-    def _updateFeaturesTreeWidgetRight(self):
-        self.mFeaturesTreeViewRight.clear()
-        self._featureFormWidgets = []
-
-        for featureItem in self._featuresModelRight.get_all_feature_items():
-            treeWidgetItem = QTreeWidgetItem(self.mFeaturesTreeViewRight)
-            treeWidgetItem.setText(0, featureItem.display_string())
-            treeWidgetItem.setIcon(0, featureItem.display_icon())
-            self.mFeaturesTreeViewRight.addTopLevelItem(treeWidgetItem)
-
-            if self._nmRelation.isValid() and self._linkingChildManagerDialogConfig.get(
-                CONFIG_SHOW_AND_EDIT_JOIN_TABLE_ATTRIBUTES, False
-            ):
-                treeWidgetItemChildren = QTreeWidgetItem(treeWidgetItem)
-                treeWidgetItem.addChild(treeWidgetItemChildren)
-
-                joinLayer = self._nmRelation.referencingLayer()
-                joinFeature = QgsFeature()
-
-                if featureItem.feature_state() == FeaturesModel.FeatureState.Linked:
-                    request = self._nmRelation.getRelatedFeaturesRequest(featureItem.feature())
-                    for jfeature in joinLayer.getFeatures(request):
-                        joinFeature = jfeature
-                        break
-                else:
-                    treeWidgetItem.setExpanded(True)
-
-                    # Expression context for the linking table
-                    context = joinLayer.createExpressionContext()
-                    joinFeature = QgsVectorLayerUtils.createFeature(joinLayer, QgsGeometry(), {}, context)
-
-                    # Fields of the linking table
-                    fields = joinLayer.fields()
-
-                    if self._relation.type() == QgsRelation.Generated:
-                        polyRel = self._relation.polymorphicRelation()
-                        assert polyRel.isValid()
-
-                        joinFeature[fields.indexFromName(polyRel.referencedLayerField())] = polyRel.layerRepresentation(
-                            self.relation().referencedLayer()
-                        )
-
-                    for referencingField, referencedField in self._relation.fieldPairs().items():
-                        index = fields.indexOf(referencingField)
-                        joinFeature[index] = self._parentFeature.attribute(referencedField)
-
-                    for referencingField, referencedField in self._nmRelation.fieldPairs().items():
-                        index = fields.indexOf(referencingField)
-                        joinFeature[index] = featureItem.feature().attribute(referencedField)
-
-                attributeForm = QgsAttributeForm(joinLayer, joinFeature)
-
-                if featureItem.feature_state() == FeaturesModel.FeatureState.ToBeLinked:
-                    attributeForm.setMode(QgsAttributeEditorContext.AddFeatureMode)
-
-                self.mFeaturesTreeViewRight.setItemWidget(treeWidgetItemChildren, 0, attributeForm)
-
-                self._featureFormWidgets.append(attributeForm)

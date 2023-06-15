@@ -23,10 +23,14 @@ class AttributeFormDelegate(QItemDelegate):
     def createEditor(self, parent, option, index):
         item = self._model.getItem(index)
 
+        print("createEditor for index: {} {} - item: {}".format(index.row(), index.column(), item))
+
         self._attributeForm = QgsAttributeForm(item.layer(), item.feature(), QgsAttributeEditorContext(), parent)
 
         if item.parentItem().feature_state() == FeaturesModel.FeatureState.ToBeLinked:
             self._attributeForm.setMode(QgsAttributeEditorContext.AddFeatureMode)
+
+        item.setAttributeForm(self._attributeForm)
 
         self.sizeHintChanged.emit(index)
         return self._attributeForm
@@ -43,7 +47,6 @@ class AttributeFormDelegate(QItemDelegate):
             return super().sizeHint(option, index)
 
         if self._attributeForm is None:
-            print("Super sizehint: {}".format(super().sizeHint(option, index)))
             return super().sizeHint(option, index)
 
         return self._attributeForm.sizeHint()
