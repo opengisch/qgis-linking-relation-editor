@@ -20,18 +20,20 @@ from qgis.core import (
 )
 from qgis.gui import (
     QgsAttributeEditorContext,
-    QgsAttributeForm,
     QgsHighlight,
     QgsIdentifyMenu,
     QgsMessageBar,
 )
-from qgis.PyQt.QtCore import Qt, QTimer
-from qgis.PyQt.QtWidgets import QAction, QDialog, QMessageBox, QTreeWidgetItem
+from qgis.PyQt.QtCore import QModelIndex, Qt, QTimer
+from qgis.PyQt.QtWidgets import QAction, QDialog, QMessageBox
 from qgis.PyQt.uic import loadUiType
 from qgis.utils import iface
 
-from linking_relation_editor.core.features_model import FeaturesModel
-from linking_relation_editor.core.features_model_filter import FeaturesModelFilter
+from linking_relation_editor.core.model.attribute_form_delegate import (
+    AttributeFormDelegate,
+)
+from linking_relation_editor.core.model.features_model import FeaturesModel
+from linking_relation_editor.core.model.features_model_filter import FeaturesModelFilter
 from linking_relation_editor.gui.feature_filter_widget import FeatureFilterWidget
 from linking_relation_editor.gui.map_tool_select_rectangle import MapToolSelectRectangle
 
@@ -69,7 +71,6 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
             self._mapToolSelect = MapToolSelectRectangle(self._canvas(), self._layer)
 
         self._highlight = []
-        self._featureFormWidgets = []
 
         # Ui setup
         self.setupUi(self)
@@ -127,12 +128,12 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
         self.mFeaturesListViewLeft.setContextMenuPolicy(Qt.ActionsContextMenu)
         self.mFeaturesListViewLeft.addAction(self._actionLinkSelected)
         self.mFeaturesListViewLeft.addAction(self._actionLinkAll)
-        self.mFeaturesTreeWidgetRight.setContextMenuPolicy(Qt.ActionsContextMenu)
-        self.mFeaturesTreeWidgetRight.addAction(self._actionUnlinkSelected)
-        self.mFeaturesTreeWidgetRight.addAction(self._actionUnlinkAll)
+        self.mFeaturesTreeViewRight.setContextMenuPolicy(Qt.ActionsContextMenu)
+        self.mFeaturesTreeViewRight.addAction(self._actionUnlinkSelected)
+        self.mFeaturesTreeViewRight.addAction(self._actionUnlinkAll)
         if self._layer.isSpatial():
             self.mFeaturesListViewLeft.addAction(self._actionZoomToSelectedLeft)
-            self.mFeaturesTreeWidgetRight.addAction(self._actionZoomToSelectedRight)
+            self.mFeaturesTreeViewRight.addAction(self._actionZoomToSelectedRight)
 
         displayString = QgsVectorLayerUtils.getFeatureDisplayString(self._parentLayer, self._parentFeature)
         self.setWindowTitle(
@@ -143,17 +144,34 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
 
         linkedFeatures, unlinkedFeatures, request = self._getAllFeatures()
 
+        handleJoinFeature = self._linkingChildManagerDialogConfig.get(CONFIG_SHOW_AND_EDIT_JOIN_TABLE_ATTRIBUTES, False)
         self._featuresModelLeft = FeaturesModel(
-            unlinkedFeatures, FeaturesModel.FeatureState.Unlinked, self._layer, self
+            unlinkedFeatures,
+            FeaturesModel.FeatureState.Unlinked,
+            self._layer,
+            handleJoinFeatures=handleJoinFeature,
+            parentFeature=self._parentFeature,
+            relation=self._relation,
+            nmRelation=self._nmRelation,
+            parent=self,
         )
-
         self._featuresModelFilterLeft = FeaturesModelFilter(self._layer, self._canvas(), self)
         self._featuresModelFilterLeft.setSourceModel(self._featuresModelLeft)
-
         self.mFeaturesListViewLeft.setModel(self._featuresModelFilterLeft)
 
-        self._featuresModelRight = FeaturesModel(linkedFeatures, FeaturesModel.FeatureState.Linked, self._layer, self)
-        self._updateFeaturesTreeWidgetRight()
+        self._featuresModelRight = FeaturesModel(
+            linkedFeatures,
+            FeaturesModel.FeatureState.Linked,
+            self._layer,
+            handleJoinFeatures=handleJoinFeature,
+            parentFeature=self._parentFeature,
+            relation=self._relation,
+            nmRelation=self._nmRelation,
+            parent=self,
+        )
+        self.mFeaturesTreeViewRight.setModel(self._featuresModelRight)
+        self.mFeaturesTreeViewRight.setItemDelegate(AttributeFormDelegate(self._featuresModelRight, self))
+        self.mFeaturesTreeViewRight.expanded.connect(self._treeViewItemExpanded)
 
         self.mQuickFilterLineEdit.setVisible(False)
 
@@ -265,10 +283,9 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
                 featuresModelElement.set_feature_state(FeaturesModel.FeatureState.ToBeLinked)
 
         self._featuresModelRight.add_features_model_items(featuresModelElements)
-        self._updateFeaturesTreeWidgetRight()
 
     def _unlinkSelected(self):
-        indexes = self.mFeaturesTreeWidgetRight.selectedIndexes()[:]
+        indexes = self.mFeaturesTreeViewRight.selectedIndexes()[:]
         featuresModelElements = self._featuresModelRight.take_items(indexes)
 
         if not featuresModelElements:
@@ -281,8 +298,6 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
                 featuresModelElement.set_feature_state(FeaturesModel.FeatureState.ToBeUnlinked)
 
         self._featuresModelLeft.add_features_model_items(featuresModelElements)
-
-        self._updateFeaturesTreeWidgetRight()
 
     def _linkAll(self):
         if self._oneToOne:
@@ -317,7 +332,6 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
                 featuresModelElement.set_feature_state(FeaturesModel.FeatureState.ToBeLinked)
 
         self._featuresModelRight.add_features_model_items(featuresModelElements)
-        self._updateFeaturesTreeWidgetRight()
 
     def _unlinkAll(self):
         featuresModelElements = self._featuresModelRight.take_all_items()
@@ -332,7 +346,6 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
                 featuresModelElement.set_feature_state(FeaturesModel.FeatureState.ToBeUnlinked)
 
         self._featuresModelLeft.add_features_model_items(featuresModelElements)
-        self._updateFeaturesTreeWidgetRight()
 
     def _quick_filter_triggered(self, checked: bool):
         self.mQuickFilterLineEdit.setVisible(checked)
@@ -381,7 +394,7 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
             return
 
         selectedFeatureIds = []
-        for modelIndex in self.mFeaturesTreeWidgetRight.selectedIndexes():
+        for modelIndex in self.mFeaturesTreeViewRight.selectedIndexes():
             selectedFeatureIds.append(self._featuresModelRight.data(modelIndex, FeaturesModel.UserRole.FeatureId))
 
         if len(selectedFeatureIds) == 0:
@@ -473,8 +486,9 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
     def _accepting(self):
         # Save join features edits
         if self._linkingChildManagerDialogConfig.get(CONFIG_SHOW_AND_EDIT_JOIN_TABLE_ATTRIBUTES, False):
-            for attributeFormWidget in self._featureFormWidgets:
-                attributeFormWidget.save()
+            for featureItem in self._featuresModelRight.featureItems():
+                if featureItem.childItem() is not None:
+                    featureItem.childItem().save()
 
         self._closing()
 
@@ -482,32 +496,10 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
         self._deleteHighlight()
         self._unsetMapTool()
 
-    def _updateFeaturesTreeWidgetRight(self):
-        self.mFeaturesTreeWidgetRight.clear()
-        self._featureFormWidgets = []
+    def _treeViewItemExpanded(self, index: QModelIndex):
+        # For child items do nothing
+        if self._featuresModelRight.parent(index).isValid():
+            return
 
-        for featureItem in self._featuresModelRight.get_all_feature_items():
-            treeWidgetItem = QTreeWidgetItem(self.mFeaturesTreeWidgetRight)
-            treeWidgetItem.setText(0, featureItem.display_string())
-            treeWidgetItem.setIcon(0, featureItem.display_icon())
-            self.mFeaturesTreeWidgetRight.addTopLevelItem(treeWidgetItem)
-
-            if self._nmRelation.isValid() and self._linkingChildManagerDialogConfig.get(
-                CONFIG_SHOW_AND_EDIT_JOIN_TABLE_ATTRIBUTES, False
-            ):
-                treeWidgetItemChildren = QTreeWidgetItem(treeWidgetItem)
-                treeWidgetItem.addChild(treeWidgetItemChildren)
-
-                joinLayer = self._nmRelation.referencingLayer()
-                joinFeature = QgsFeature()
-
-                if featureItem.feature_state() == FeaturesModel.FeatureState.Linked:
-                    request = self._nmRelation.getRelatedFeaturesRequest(featureItem.feature())
-                    for jfeature in joinLayer.getFeatures(request):
-                        joinFeature = jfeature
-
-                attributeForm = QgsAttributeForm(joinLayer, joinFeature)
-
-                self.mFeaturesTreeWidgetRight.setItemWidget(treeWidgetItemChildren, 0, attributeForm)
-
-                self._featureFormWidgets.append(attributeForm)
+        childrenIndex = self._featuresModelRight.index(0, 0, index)
+        self.mFeaturesTreeViewRight.openPersistentEditor(childrenIndex)

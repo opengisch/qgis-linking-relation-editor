@@ -12,7 +12,7 @@ from qgis.gui import QgsMapCanvas
 from qgis.PyQt.QtCore import QModelIndex, QObject, QSortFilterProxyModel, Qt
 from qgis.PyQt.QtWidgets import QApplication
 
-from linking_relation_editor.core.features_model import FeaturesModel
+from linking_relation_editor.core.model.features_model import FeaturesModel
 
 
 class FeaturesModelFilter(QSortFilterProxyModel):
@@ -129,10 +129,9 @@ class FeaturesModelFilter(QSortFilterProxyModel):
         if not rowDisplayRole:
             return False
 
-        return all( word.lower() in rowDisplayRole.lower() for word in self._quick_filter.split() )
+        return all(word.lower() in rowDisplayRole.lower() for word in self._quick_filter.split())
 
     def _prepare_filtered_features(self):
-
         self._feature_filter_filtered_features = list()
 
         if not self._feature_filter_expression.isValid():
@@ -163,7 +162,6 @@ class FeaturesModelFilter(QSortFilterProxyModel):
         QApplication.restoreOverrideCursor()
 
     def _prepare_filtered_by_visible_features(self):
-
         self._feature_filter_filtered_features = list()
 
         if not self._canvas:

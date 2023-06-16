@@ -19,7 +19,6 @@ from qgis.core import (
     QgsGeometry,
     QgsIconUtils,
     QgsLogger,
-    QgsMessageLog,
     QgsProject,
     QgsRelation,
     QgsVectorLayer,
@@ -44,12 +43,11 @@ from linking_relation_editor.gui.filtered_selection_manager import (
     FilteredSelectionManager,
 )
 from linking_relation_editor.gui.linking_child_manager_dialog import (
+    CONFIG_SHOW_AND_EDIT_JOIN_TABLE_ATTRIBUTES,
     LinkingChildManagerDialog,
 )
 
 WidgetUi, _ = loadUiType(os.path.join(os.path.dirname(__file__), "../ui/linking_relation_editor_widget.ui"))
-
-Debug = True
 
 CONFIG_ONE_TO_ONE = "one_to_one"
 CONFIG_LINKING_CHILD_MANAGER_DIALOG = "linking_child_manager_dialog"
@@ -352,9 +350,6 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         self._updateUiTimer.start(200)
 
     def updateUiTimeout(self):
-        if Debug:
-            QgsMessageLog.logMessage("updateUiTimeout()")
-
         if not self.relation().isValid() or not self.feature().isValid():
             return
 
@@ -367,8 +362,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
             self.updateUiSingleEdit()
 
     def parentFormValueChanged(self, attribute, newValue):
-        if Debug:
-            QgsMessageLog.logMessage("parentFormValueChanged()")
+        pass
 
     def updateUiSingleEdit(self):
         self.mFormViewButton.setVisible(not self.mOneToOne)
@@ -797,9 +791,19 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
     def _relationEditorLinkChildManagerDialogAccepted(self):
         relationEditorLinkChildManagerDialog = self.sender()
 
-        # Link/unlink features
+        # Unlink features
         self.unlinkFeatures(relationEditorLinkChildManagerDialog.get_feature_ids_to_unlink())
-        self._linkFeatures(relationEditorLinkChildManagerDialog.get_feature_ids_to_link())
+
+        # If "show and edit join table attributes" is activated, the link is done in the linking child manager dialog
+        if self.mLinkingChildManagerDialogConfig.get(CONFIG_SHOW_AND_EDIT_JOIN_TABLE_ATTRIBUTES, False):
+            self.updateUi()
+
+            # relatedFeaturesChanged available since QGIS 3.24
+            if Qgis.QGIS_VERSION_INT >= 32400:
+                self.relatedFeaturesChanged.emit()
+        else:
+            # Link features
+            self._linkFeatures(relationEditorLinkChildManagerDialog.get_feature_ids_to_link())
 
         relationEditorLinkChildManagerDialog.deleteLater()
 
