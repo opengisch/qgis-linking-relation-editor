@@ -21,9 +21,7 @@ class AttributeFormDelegate(QItemDelegate):
         self._attributeForm = None
 
     def createEditor(self, parent, option, index):
-        item = self._model.getItem(index)
-
-        print("createEditor for index: {} {} - item: {}".format(index.row(), index.column(), item))
+        item = index.internalPointer()
 
         self._attributeForm = QgsAttributeForm(item.layer(), item.feature(), QgsAttributeEditorContext(), parent)
 

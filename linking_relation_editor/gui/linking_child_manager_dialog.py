@@ -500,7 +500,6 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
         # For child items do nothing
         if self._featuresModelRight.parent(index).isValid():
             return
-        print("Item expanded: {} {}".format(index.row(), index.column()))
-        return
-        childrenIndex = self._featuresModelRight.index(index.row(), index.column(), index)
+
+        childrenIndex = self._featuresModelRight.index(0, 0, index)
         self.mFeaturesTreeViewRight.openPersistentEditor(childrenIndex)
