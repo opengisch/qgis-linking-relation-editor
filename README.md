@@ -22,8 +22,10 @@ Linking can be restricted to one linked feature per feature by setting the Cardi
 
 ## Show and edit join table attributes
 
-When this option is enabled, the link manager dialog will show the linked features in a tree structure instead of a simple list. The tree elements can be expanded to show the attribute form of the join feature. That attribute form can be configured as usual in the layer properties of the join layer.
-
 ![Configuration show and edit join table attributes](documentation/ConfigurationShowAndEditJoinTableAttributes.png)
 
-**Note:** If a feature is not respecting the constraints it will not be linked/modified when the dialog is accepted. Other features with valid attributes will still be linked.
+When this option is enabled, the link manager dialog will show the linked features in a tree structure instead of a simple list. The tree elements can be expanded to show the attribute form of the join feature. The attribute form can be configured as usual in the layer properties of the join layer.
+
+![Join feature editing](documentation/JoinFeatureEditing.gif)
+
+**Note:** If a feature is not respecting the constraints, it will not be linked/modified when the dialog is accepted. Other features with valid attributes will still be linked.

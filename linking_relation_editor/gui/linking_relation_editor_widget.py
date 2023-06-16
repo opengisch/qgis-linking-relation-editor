@@ -794,7 +794,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         # Unlink features
         self.unlinkFeatures(relationEditorLinkChildManagerDialog.get_feature_ids_to_unlink())
 
-        # If "show and edit join table attributes" is activated, the link is done in the linking childe manager dialog
+        # If "show and edit join table attributes" is activated, the link is done in the linking child manager dialog
         if self.mLinkingChildManagerDialogConfig.get(CONFIG_SHOW_AND_EDIT_JOIN_TABLE_ATTRIBUTES, False):
             self.updateUi()
 
