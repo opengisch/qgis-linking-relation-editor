@@ -487,8 +487,8 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
         # Save join features edits
         if self._linkingChildManagerDialogConfig.get(CONFIG_SHOW_AND_EDIT_JOIN_TABLE_ATTRIBUTES, False):
             for featureItem in self._featuresModelRight.featureItems():
-                if featureItem.childItem() is not None and featureItem.childItem().attributeForm() is not None:
-                    featureItem.childItem().attributeForm().save()
+                if featureItem.childItem() is not None:
+                    featureItem.childItem().save()
 
         self._closing()
 

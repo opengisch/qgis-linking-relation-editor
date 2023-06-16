@@ -8,10 +8,7 @@
 #
 # -----------------------------------------------------------
 
-from qgis.gui import QgsAttributeEditorContext, QgsAttributeForm
 from qgis.PyQt.QtWidgets import QItemDelegate
-
-from linking_relation_editor.core.model.features_model import FeaturesModel
 
 
 class AttributeFormDelegate(QItemDelegate):
@@ -22,14 +19,7 @@ class AttributeFormDelegate(QItemDelegate):
 
     def createEditor(self, parent, option, index):
         item = index.internalPointer()
-
-        self._attributeForm = QgsAttributeForm(item.layer(), item.feature(), QgsAttributeEditorContext(), parent)
-
-        if item.parentItem().feature_state() == FeaturesModel.FeatureState.ToBeLinked:
-            self._attributeForm.setMode(QgsAttributeEditorContext.AddFeatureMode)
-
-        item.setAttributeForm(self._attributeForm)
-
+        self._attributeForm = item.createAttributeForm(parent)
         self.sizeHintChanged.emit(index)
         return self._attributeForm
 

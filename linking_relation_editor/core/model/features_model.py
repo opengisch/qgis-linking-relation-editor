@@ -21,6 +21,7 @@ from qgis.core import (
     QgsVectorLayer,
     QgsVectorLayerUtils,
 )
+from qgis.gui import QgsAttributeEditorContext, QgsAttributeForm
 from qgis.PyQt.QtCore import QAbstractItemModel, QModelIndex, QObject, Qt
 from qgis.PyQt.QtGui import QIcon
 
@@ -142,11 +143,22 @@ class FeaturesModel(QAbstractItemModel):
         def layer(self):
             return self._layer
 
-        def setAttributeForm(self, attributeForm):
-            self._attributeForm = attributeForm
+        def createAttributeForm(self, parent):
+            self._attributeForm = QgsAttributeForm(self._layer, self._feature, QgsAttributeEditorContext(), parent)
+
+            if self._parentItem.feature_state() == FeaturesModel.FeatureState.ToBeLinked:
+                self._attributeForm.setMode(QgsAttributeEditorContext.AddFeatureMode)
+
+            return self._attributeForm
 
         def attributeForm(self):
             return self._attributeForm
+
+        def save(self):
+            if self._attributeForm is None:
+                self.createAttributeForm(None)
+
+            self._attributeForm.save()
 
     def __init__(
         self,
