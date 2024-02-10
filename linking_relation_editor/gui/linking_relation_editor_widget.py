@@ -689,35 +689,35 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         if len(selectedItems) == 1 and len(self.mMultiEditPreviousSelectedItems) <= 1:
             selectedItem = selectedItems[0]
             if selectedItem.data(0, self.MultiEditTreeWidgetRole.FeatureType) == self.MultiEditFeatureType.Child:
-                self.mMultiEditTreeWidget.blockSignals(True)
-
                 featureIdSelectedItem = selectedItem.data(0, self.MultiEditTreeWidgetRole.FeatureId)
 
-                for indexTopLevelItem in range(self.mMultiEditTreeWidget.topLevelItemCount()):
-                    treeWidgetTopLevelItem = self.mMultiEditTreeWidget.topLevelItem(indexTopLevelItem)
-
-                    for indexItem in range(treeWidgetTopLevelItem.childCount()):
-                        treeWidgetItem = treeWidgetTopLevelItem.child(indexItem)
-
-                        if (
-                            treeWidgetItem.data(0, self.MultiEditTreeWidgetRole.FeatureType)
-                            != self.MultiEditFeatureType.Child
-                        ):
-                            QgsLogger.warning(self.tr("Not a child item"))
-                            continue
-
-                        featureIdCurrentItem = treeWidgetItem.data(0, self.MultiEditTreeWidgetRole.FeatureId)
-                        if self.nmRelation().isValid():
-                            if featureIdSelectedItem == featureIdCurrentItem:
-                                treeWidgetItem.setSelected(True)
-                        else:
-                            if featureIdSelectedItem not in self.mMultiEdit1NJustAddedIds:
-                                break
+                if featureIdSelectedItem in self.mMultiEdit1NJustAddedIds:
+                    self.mMultiEditTreeWidget.blockSignals(True)
+                    for indexTopLevelItem in range(self.mMultiEditTreeWidget.topLevelItemCount()):
+                        treeWidgetTopLevelItem = self.mMultiEditTreeWidget.topLevelItem(indexTopLevelItem)
     
-                            if featureIdCurrentItem not in self.mMultiEdit1NJustAddedIds:
-                                treeWidgetItem.setSelected(True)
-
-                self.mMultiEditTreeWidget.blockSignals(False)
+                        for indexItem in range(treeWidgetTopLevelItem.childCount()):
+                            treeWidgetItem = treeWidgetTopLevelItem.child(indexItem)
+    
+                            if (
+                                treeWidgetItem.data(0, self.MultiEditTreeWidgetRole.FeatureType)
+                                != self.MultiEditFeatureType.Child
+                            ):
+                                QgsLogger.warning(self.tr("Not a child item"))
+                                continue
+    
+                            featureIdCurrentItem = treeWidgetItem.data(0, self.MultiEditTreeWidgetRole.FeatureId)
+                            if self.nmRelation().isValid():
+                                if featureIdSelectedItem == featureIdCurrentItem:
+                                    treeWidgetItem.setSelected(True)
+                            else:
+                                if featureIdSelectedItem not in self.mMultiEdit1NJustAddedIds:
+                                    break
+        
+                                if featureIdCurrentItem in self.mMultiEdit1NJustAddedIds:
+                                    treeWidgetItem.setSelected(True)
+    
+                    self.mMultiEditTreeWidget.blockSignals(False)
 
         self.mMultiEditPreviousSelectedItems = selectedItems
         self.updateButtons()
