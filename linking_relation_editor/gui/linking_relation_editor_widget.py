@@ -10,6 +10,7 @@
 
 import os
 from enum import IntEnum
+import copy
 
 from qgis.core import (
     Qgis,
@@ -426,10 +427,10 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
                         treeWidgetItem.addChild(treeWidgetItemChild)
                         featureIdsMixedValues.add(featureChildChild.id())
 
-                        if treeWidgetItem in multimapChildFeatures:
-                            multimapChildFeatures[treeWidgetItem].append(featureChildChild.id())
+                        if id(treeWidgetItem) in multimapChildFeatures:
+                            multimapChildFeatures[id(treeWidgetItem)].append(featureChildChild.id())
                         else:
-                            multimapChildFeatures[treeWidgetItem] = [featureChildChild.id()]
+                            multimapChildFeatures[id(treeWidgetItem)] = [featureChildChild.id()]
 
                 else:
                     treeWidgetItemChild = self.createMultiEditTreeWidgetItem(
@@ -453,10 +454,10 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         # See https://github.com/qgis/QGIS/pull/45703
         #
         if self.nmRelation().isValid():
-            for featureIdMixedValue in featureIdsMixedValues[:]:
+            for featureIdMixedValue in copy.copy(featureIdsMixedValues):
                 mixedValues = True
                 for parentTreeWidgetItem in parentTreeWidgetItems:
-                    if featureIdMixedValue in multimapChildFeatures[parentTreeWidgetItem]:
+                    if featureIdMixedValue in multimapChildFeatures[id(parentTreeWidgetItem)]:
                         mixedValues = True
                         break
 
