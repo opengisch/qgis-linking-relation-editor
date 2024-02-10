@@ -758,7 +758,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         qAction.triggered.connect(lambda state, fid=fid: self.unlinkFeature(fid))
 
     def unlinkSelectedFeatures(self):
-        self.unlinkFeatures(self.selectedChildFeatureIds())
+        self.unlinkFeatures(list(self.selectedChildFeatureIds()))
 
     def zoomToSelectedFeatures(self):
         if self.editorContext().mapCanvas():
