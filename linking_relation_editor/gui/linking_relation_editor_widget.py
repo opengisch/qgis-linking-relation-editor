@@ -553,7 +553,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
             self.editorContext().mainMessageBar().pushItem(self.mMessageBarItem)
 
     def deleteSelectedFeatures(self):
-        self.deleteFeatures(self.selectedChildFeatureIds())
+        self.deleteFeatures(list(self.selectedChildFeatureIds()))
 
     def duplicateFeatures(self, fids):
         layer = self.relation().referencingLayer()
