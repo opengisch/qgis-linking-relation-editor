@@ -454,7 +454,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         # See https://github.com/qgis/QGIS/pull/45703
         #
         if self.nmRelation().isValid():
-            for featureIdMixedValue in copy.copy(featureIdsMixedValues):
+            for featureIdMixedValue in set(featureIdsMixedValues):
                 mixedValues = True
                 for parentTreeWidgetItem in parentTreeWidgetItems:
                     if featureIdMixedValue in multimapChildFeatures[id(parentTreeWidgetItem)]:
