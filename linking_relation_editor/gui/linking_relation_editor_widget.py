@@ -185,6 +185,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         return {
             "buttons": metaEnumFromValue(QgsRelationEditorWidget.Button.AllButtons).valueToKeys(self.visibleButtons()),
             "show_first_feature": self.mShowFirstFeature,
+            "filter_exression": self.mFilterExpression,
             CONFIG_ONE_TO_ONE: self.mOneToOne,
             CONFIG_LINKING_CHILD_MANAGER_DIALOG: self.mLinkingChildManagerDialogConfig,
         }
@@ -195,6 +196,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
             config.get("buttons", metaEnumButtons.valueToKeys(QgsRelationEditorWidget.Button.AllButtons))
         )
         self.mShowFirstFeature = config.get("show_first_feature", True)
+        self.mFilterExpression = config.get("filter_expression")
         self.mOneToOne = config.get(CONFIG_ONE_TO_ONE)
         self.mLinkingChildManagerDialogConfig = config.get(CONFIG_LINKING_CHILD_MANAGER_DIALOG, {})
         self.updateButtons()
@@ -589,6 +591,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
             self.nmRelation(),
             self.editorContext(),
             self.mOneToOne,
+            self.mFilterExpression,
             self.mLinkingChildManagerDialogConfig,
             self,
         )

@@ -23,11 +23,13 @@ from qgis.gui import (
     QgsHighlight,
     QgsIdentifyMenu,
     QgsMessageBar,
+    QgsAttributeForm
 )
 from qgis.PyQt.QtCore import QModelIndex, Qt, QTimer
 from qgis.PyQt.QtWidgets import QAction, QDialog, QMessageBox
 from qgis.PyQt.uic import loadUiType
 from qgis.utils import iface
+from unittest.mock import MagicMock
 
 from linking_relation_editor.core.model.attribute_form_delegate import (
     AttributeFormDelegate,
@@ -52,6 +54,7 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
         nmRelation: QgsRelation,
         editorContext: QgsAttributeEditorContext,
         oneToOne: bool,
+        filterExpression: str,
         linkingChildManagerDialogConfig: dict,
         parent=None,
     ):
@@ -64,6 +67,7 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
         self._nmRelation = nmRelation
         self._editorContext = editorContext
         self._oneToOne = oneToOne
+        self._filterExpression = filterExpression
         self._linkingChildManagerDialogConfig = linkingChildManagerDialogConfig
 
         self._mapToolSelect = None
@@ -177,14 +181,22 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
 
         self._feature_filter_widget = FeatureFilterWidget(self)
         self.mFooterHBoxLayout.insertWidget(0, self._feature_filter_widget)
-        if iface:  # TODO how to use iface in tests?
-            self._feature_filter_widget.init(
-                self._layer,
-                self._editorContext,
-                self._featuresModelFilterLeft,
-                iface.messageBar(),
-                QgsMessageBar.defaultMessageTimeout(),
-            )
+        
+        # used for untittest
+        if not iface:
+            i = MagicMock()
+        else:
+            i = iface
+        self._feature_filter_widget.init(
+            self._layer,
+            self._editorContext,
+            self._featuresModelFilterLeft,
+            i.messageBar(),
+            QgsMessageBar.defaultMessageTimeout(),
+        )
+        if self._filterExpression:
+            self._feature_filter_widget.setFilterExpression(self._filterExpression,QgsAttributeForm.ReplaceFilter, True)
+        else:
             self._feature_filter_widget.filterShowAll()
 
         # Signal slots
