@@ -320,34 +320,6 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
                 break
 
         self.assertTrue(parentFeature.isValid())
-
-        dialog = LinkingChildManagerDialog(
-            self.mLayer1,
-            self.mLayer2,
-            parentFeature,
-            self.mRelation,
-            QgsRelation(),
-            QgsAttributeEditorContext(),
-            False,
-            None,
-            {},
-            None,
-        )
-
-        self.assertEqual(dialog.mLayerNameLabel.text(), self.mLayer1.name())
-
-        # all entries
-        # "Layer1-0: The Artist formerly known as Prince"
-        # "Layer1-1: Martina formerly known as Prisca"
-        self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 2)
-        self.assertEqual(
-            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole),
-            "Layer1-0: The Artist formerly known as Prince",
-        )
-        self.assertEqual(
-            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.DisplayRole),
-            "Layer1-1: Martina formerly known as Prisca",
-        )        
         
         dialog = LinkingChildManagerDialog(
             self.mLayer1,
@@ -399,3 +371,27 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
             dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.DisplayRole),
             "Layer1-1: Martina formerly known as Prisca",
         )
+        
+        dialog = LinkingChildManagerDialog(
+            self.mLayer1,
+            self.mLayer2,
+            parentFeature,
+            self.mRelation,
+            QgsRelation(),
+            QgsAttributeEditorContext(),
+            False,
+            "name LIKE '%Prisca%'",
+            {},
+            None,
+        )
+
+        self.assertEqual(dialog.mLayerNameLabel.text(), self.mLayer1.name())
+
+        # one entry
+        # "Layer1-0: The Artist formerly known as Prince"
+        self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 1)
+        self.assertEqual(
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole),
+            "Layer1-1: Martina formerly known as Prisca",
+        )
+    
