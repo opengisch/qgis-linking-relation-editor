@@ -23,6 +23,7 @@ from qgis.gui import (
     QgsHighlight,
     QgsIdentifyMenu,
     QgsMessageBar,
+    QgsAttributeForm
 )
 from qgis.PyQt.QtCore import QModelIndex, Qt, QTimer
 from qgis.PyQt.QtWidgets import QAction, QDialog, QMessageBox
@@ -52,6 +53,7 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
         nmRelation: QgsRelation,
         editorContext: QgsAttributeEditorContext,
         oneToOne: bool,
+        filterExpression: str,
         linkingChildManagerDialogConfig: dict,
         parent=None,
     ):
@@ -64,6 +66,7 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
         self._nmRelation = nmRelation
         self._editorContext = editorContext
         self._oneToOne = oneToOne
+        self._filterExpression = filterExpression
         self._linkingChildManagerDialogConfig = linkingChildManagerDialogConfig
 
         self._mapToolSelect = None
@@ -185,7 +188,10 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
                 iface.messageBar(),
                 QgsMessageBar.defaultMessageTimeout(),
             )
-            self._feature_filter_widget.filterShowAll()
+            if self._filterExpression:
+                self._feature_filter_widget.setFilterExpression(self._filterExpression,QgsAttributeForm.ReplaceFilter, True)
+            else:
+                self._feature_filter_widget.filterShowAll()
 
         # Signal slots
         self.accepted.connect(self._accepting)

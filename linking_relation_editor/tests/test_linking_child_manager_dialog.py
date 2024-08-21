@@ -138,6 +138,7 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
             QgsRelation(),
             QgsAttributeEditorContext(),
             False,
+            None,
             {},
             None,
         )
@@ -160,6 +161,7 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
             QgsRelation(),
             QgsAttributeEditorContext(),
             False,
+            None,
             {},
             None,
         )
@@ -182,6 +184,7 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
             self.mRelationNM,
             QgsAttributeEditorContext(),
             False,
+            None,
             {},
             None,
         )
@@ -206,6 +209,7 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
             QgsRelation(),
             QgsAttributeEditorContext(),
             False,
+            None,
             {},
             None,
         )
@@ -295,6 +299,95 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
         self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 0)
 
         dialog._featuresModelFilterLeft.set_quick_filter("")
+        # "Layer1-0: The Artist formerly known as Prince"
+        # "Layer1-1: Martina formerly known as Prisca"
+        self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 2)
+        self.assertEqual(
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole),
+            "Layer1-0: The Artist formerly known as Prince",
+        )
+        self.assertEqual(
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.DisplayRole),
+            "Layer1-1: Martina formerly known as Prisca",
+        )
+
+    def test_passed_filter_expression(self):
+        # get a parent with no childs
+        parentFeature = QgsFeature()
+        for feature in self.mLayer2.getFeatures():
+            if feature.attribute("pk") == 12:
+                parentFeature = feature
+                break
+
+        self.assertTrue(parentFeature.isValid())
+
+        dialog = LinkingChildManagerDialog(
+            self.mLayer1,
+            self.mLayer2,
+            parentFeature,
+            self.mRelation,
+            QgsRelation(),
+            QgsAttributeEditorContext(),
+            False,
+            None,
+            {},
+            None,
+        )
+
+        self.assertEqual(dialog.mLayerNameLabel.text(), self.mLayer1.name())
+
+        # all entries
+        # "Layer1-0: The Artist formerly known as Prince"
+        # "Layer1-1: Martina formerly known as Prisca"
+        self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 2)
+        self.assertEqual(
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole),
+            "Layer1-0: The Artist formerly known as Prince",
+        )
+        self.assertEqual(
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.DisplayRole),
+            "Layer1-1: Martina formerly known as Prisca",
+        )        
+        
+        dialog = LinkingChildManagerDialog(
+            self.mLayer1,
+            self.mLayer2,
+            parentFeature,
+            self.mRelation,
+            QgsRelation(),
+            QgsAttributeEditorContext(),
+            False,
+            "name LIKE '%formerly known as Prince%'",
+            {},
+            None,
+        )
+
+        self.assertEqual(dialog.mLayerNameLabel.text(), self.mLayer1.name())
+
+        # one entry
+        # "Layer1-0: The Artist formerly known as Prince"
+        self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 1)
+        self.assertEqual(
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole),
+            "Layer1-0: The Artist formerly known as Prince",
+        )
+        
+        dialog = LinkingChildManagerDialog(
+            self.mLayer1,
+            self.mLayer2,
+            parentFeature,
+            self.mRelation,
+            QgsRelation(),
+            QgsAttributeEditorContext(),
+            False,
+            "name LIKE '%formerly%'",
+            {},
+            None,
+        )
+
+        self.assertEqual(dialog.mLayerNameLabel.text(), self.mLayer1.name())
+
+        # all entries with formerly
         # "Layer1-0: The Artist formerly known as Prince"
         # "Layer1-1: Martina formerly known as Prisca"
         self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 2)
