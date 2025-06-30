@@ -125,7 +125,7 @@ class FeaturesModelFilter(QSortFilterProxyModel):
         if len(self._quick_filter) == 0:
             return True
 
-        rowDisplayRole = self.sourceModel().data(index, Qt.DisplayRole)
+        rowDisplayRole = self.sourceModel().data(index, Qt.ItemDataRole.DisplayRole)
         if not rowDisplayRole:
             return False
 
@@ -141,7 +141,7 @@ class FeaturesModelFilter(QSortFilterProxyModel):
         distanceArea.setSourceCrs(self._layer.crs(), QgsProject.instance().transformContext())
         distanceArea.setEllipsoid(QgsProject.instance().ellipsoid())
 
-        QApplication.setOverrideCursor(Qt.WaitCursor)
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
 
         self._feature_filter_expression.setGeomCalculator(distanceArea)
         self._feature_filter_expression.setDistanceUnits(QgsProject.instance().distanceUnits())

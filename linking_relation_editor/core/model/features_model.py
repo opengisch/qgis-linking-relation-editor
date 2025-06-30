@@ -28,7 +28,7 @@ from qgis.PyQt.QtGui import QIcon
 
 class FeaturesModel(QAbstractItemModel):
     class UserRole(IntEnum):
-        FeatureId = Qt.UserRole + 1
+        FeatureId = Qt.ItemDataRole.UserRole + 1
 
     class FeatureState(IntEnum):
         Linked = (1,)
@@ -62,7 +62,7 @@ class FeaturesModel(QAbstractItemModel):
                     # Fields of the linking table
                     fields = joinLayer.fields()
 
-                    if self._model.relation.type() == QgsRelation.Generated:
+                    if self._model.relation.type() == QgsRelation.RelationType.Generated:
                         polyRel = self._model.relation.polymorphicRelation()
                         assert polyRel.isValid()
 
@@ -147,7 +147,7 @@ class FeaturesModel(QAbstractItemModel):
             self._attributeForm = QgsAttributeForm(self._layer, self._feature, QgsAttributeEditorContext(), parent)
 
             if self._parentItem.feature_state() == FeaturesModel.FeatureState.ToBeLinked:
-                self._attributeForm.setMode(QgsAttributeEditorContext.AddFeatureMode)
+                self._attributeForm.setMode(QgsAttributeEditorContext.Mode.AddFeatureMode)
 
             return self._attributeForm
 
@@ -204,13 +204,13 @@ class FeaturesModel(QAbstractItemModel):
         childItem = index.internalPointer()
 
         if isinstance(childItem, FeaturesModel.FeaturesModelItem):
-            if role == Qt.DisplayRole:
+            if role == Qt.ItemDataRole.DisplayRole:
                 return self._modelFeatures[index.row()].display_string()
 
-            if role == Qt.DecorationRole:
+            if role == Qt.ItemDataRole.DecorationRole:
                 return self._modelFeatures[index.row()].display_icon()
 
-            if role == Qt.ToolTipRole:
+            if role == Qt.ItemDataRole.ToolTipRole:
                 return self._modelFeatures[index.row()].tool_tip()
 
             if role == FeaturesModel.UserRole.FeatureId:
@@ -244,13 +244,13 @@ class FeaturesModel(QAbstractItemModel):
 
     def flags(self, index: QModelIndex):
         if not index.isValid():
-            return Qt.NoItemFlags
+            return Qt.ItemFlag.NoItemFlags
 
         childItem = index.internalPointer()
         if isinstance(childItem, FeaturesModel.FeaturesModelItem):
-            return Qt.ItemIsSelectable | Qt.ItemIsEnabled
+            return Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled
 
-        return Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable
+        return Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable
 
     def removeRows(self, row: int = ..., count: int = ..., index: QModelIndex = ...):
         if row + count > self.rowCount():
@@ -262,7 +262,7 @@ class FeaturesModel(QAbstractItemModel):
         return True
 
     def supportedDropActions(self):
-        return Qt.MoveAction
+        return Qt.DropAction.MoveAction
 
     def set_features(self, features, features_state):
         self.beginResetModel()
