@@ -123,7 +123,7 @@ class FeatureFilterWidget(QWidget, WidgetUi):
 
     def filterShowAll(self):
         self.mFilterButton.setDefaultAction(self.mActionShowAllFilter)
-        self.mFilterButton.setPopupMode(QToolButton.InstantPopup)
+        self.mFilterButton.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         self.mFilterQuery.setVisible(False)
         self.mFilterQuery.setText(str())
         if self.mCurrentSearchWidgetWrapper:
@@ -135,7 +135,7 @@ class FeatureFilterWidget(QWidget, WidgetUi):
 
     def filterSelected(self):
         self.mFilterButton.setDefaultAction(self.mActionSelectedFilter)
-        self.mFilterButton.setPopupMode(QToolButton.InstantPopup)
+        self.mFilterButton.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         self.mFilterQuery.setVisible(False)
         self.mApplyFilterButton.setVisible(False)
         self.mStoreFilterExpressionButton.setVisible(False)
@@ -147,7 +147,7 @@ class FeatureFilterWidget(QWidget, WidgetUi):
             return
 
         self.mFilterButton.setDefaultAction(self.mActionVisibleFilter)
-        self.mFilterButton.setPopupMode(QToolButton.InstantPopup)
+        self.mFilterButton.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         self.mFilterQuery.setVisible(False)
         self.mApplyFilterButton.setVisible(False)
         self.mStoreFilterExpressionButton.setVisible(False)
@@ -155,7 +155,7 @@ class FeatureFilterWidget(QWidget, WidgetUi):
 
     def filterEdited(self):
         self.mFilterButton.setDefaultAction(self.mActionEditedFilter)
-        self.mFilterButton.setPopupMode(QToolButton.InstantPopup)
+        self.mFilterButton.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         self.mFilterQuery.setVisible(False)
         self.mApplyFilterButton.setVisible(False)
         self.mStoreFilterExpressionButton.setVisible(False)
@@ -263,7 +263,7 @@ class FeatureFilterWidget(QWidget, WidgetUi):
 
     def filterColumnChanged(self, filterAction: QAction):
         self.mFilterButton.setDefaultAction(filterAction)
-        self.mFilterButton.setPopupMode(QToolButton.InstantPopup)
+        self.mFilterButton.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         # replace the search line edit with a search widget that is suited to the selected field
         # delete previous widget
         if self.mCurrentSearchWidgetWrapper:
@@ -405,7 +405,7 @@ class FeatureFilterWidget(QWidget, WidgetUi):
             or not self.mCurrentSearchWidgetWrapper.applyDirectly()
         ):
             self.mFilterButton.setDefaultAction(self.mActionAdvancedFilter)
-            self.mFilterButton.setPopupMode(QToolButton.MenuButtonPopup)
+            self.mFilterButton.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
             self.mFilterQuery.setVisible(True)
             self.mApplyFilterButton.setVisible(True)
             self.mStoreFilterExpressionButton.setVisible(True)

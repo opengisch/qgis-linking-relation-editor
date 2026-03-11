@@ -125,7 +125,7 @@ class FeaturesModelFilter(QSortFilterProxyModel):
         if len(self._quick_filter) == 0:
             return True
 
-        rowDisplayRole = self.sourceModel().data(index, Qt.DisplayRole)
+        rowDisplayRole = self.sourceModel().data(index, Qt.ItemDataRole.DisplayRole)
         if not rowDisplayRole:
             return False
 

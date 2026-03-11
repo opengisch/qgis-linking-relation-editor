@@ -221,11 +221,11 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
         # "Layer1-1: Martina formerly known as Prisca"
         self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 2)
         self.assertEqual(
-            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole),
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.ItemDataRole.DisplayRole),
             "Layer1-0: The Artist formerly known as Prince",
         )
         self.assertEqual(
-            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.DisplayRole),
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.ItemDataRole.DisplayRole),
             "Layer1-1: Martina formerly known as Prisca",
         )
 
@@ -234,7 +234,7 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
         # no "Prince" in the other entry
         self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 1)
         self.assertEqual(
-            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole),
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.ItemDataRole.DisplayRole),
             "Layer1-0: The Artist formerly known as Prince",
         )
 
@@ -243,11 +243,11 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
         # "Layer1-1: Martina *formerly* known as Prisca"
         self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 2)
         self.assertEqual(
-            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole),
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.ItemDataRole.DisplayRole),
             "Layer1-0: The Artist formerly known as Prince",
         )
         self.assertEqual(
-            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.DisplayRole),
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.ItemDataRole.DisplayRole),
             "Layer1-1: Martina formerly known as Prisca",
         )
 
@@ -256,11 +256,11 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
         # "Layer1-1: Martina *formerly* known as *Pri*sca"
         self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 2)
         self.assertEqual(
-            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole),
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.ItemDataRole.DisplayRole),
             "Layer1-0: The Artist formerly known as Prince",
         )
         self.assertEqual(
-            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.DisplayRole),
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.ItemDataRole.DisplayRole),
             "Layer1-1: Martina formerly known as Prisca",
         )
 
@@ -269,11 +269,11 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
         # "Layer1-1: M*art*ina *formerly* known as *Pri*sca"
         self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 2)
         self.assertEqual(
-            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole),
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.ItemDataRole.DisplayRole),
             "Layer1-0: The Artist formerly known as Prince",
         )
         self.assertEqual(
-            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.DisplayRole),
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.ItemDataRole.DisplayRole),
             "Layer1-1: Martina formerly known as Prisca",
         )
 
@@ -282,7 +282,7 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
         # no "the" in the other entry
         self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 1)
         self.assertEqual(
-            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole),
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.ItemDataRole.DisplayRole),
             "Layer1-0: The Artist formerly known as Prince",
         )
 
@@ -290,7 +290,7 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
         # "Layer1-1: *Mar*tina *formerly* known as *Pri*sca"
         self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 1)
         self.assertEqual(
-            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole),
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.ItemDataRole.DisplayRole),
             "Layer1-1: Martina formerly known as Prisca",
         )
 
@@ -303,11 +303,11 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
         # "Layer1-1: Martina formerly known as Prisca"
         self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 2)
         self.assertEqual(
-            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole),
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.ItemDataRole.DisplayRole),
             "Layer1-0: The Artist formerly known as Prince",
         )
         self.assertEqual(
-            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.DisplayRole),
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.ItemDataRole.DisplayRole),
             "Layer1-1: Martina formerly known as Prisca",
         )
 
@@ -340,7 +340,7 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
         # "Layer1-0: The Artist formerly known as Prince"
         self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 1)
         self.assertEqual(
-            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole),
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.ItemDataRole.DisplayRole),
             "Layer1-0: The Artist formerly known as Prince",
         )
         
@@ -364,11 +364,11 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
         # "Layer1-1: Martina formerly known as Prisca"
         self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 2)
         self.assertEqual(
-            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole),
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.ItemDataRole.DisplayRole),
             "Layer1-0: The Artist formerly known as Prince",
         )
         self.assertEqual(
-            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.DisplayRole),
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(1, 0), Qt.ItemDataRole.DisplayRole),
             "Layer1-1: Martina formerly known as Prisca",
         )
         
@@ -391,7 +391,7 @@ class TestLinkingChildManagerDialog(unittest.TestCase):
         # "Layer1-0: The Artist formerly known as Prince"
         self.assertEqual(dialog._featuresModelFilterLeft.rowCount(), 1)
         self.assertEqual(
-            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.DisplayRole),
+            dialog._featuresModelFilterLeft.data(dialog._featuresModelFilterLeft.index(0, 0), Qt.ItemDataRole.DisplayRole),
             "Layer1-1: Martina formerly known as Prisca",
         )
     
