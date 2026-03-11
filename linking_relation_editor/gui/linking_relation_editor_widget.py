@@ -60,8 +60,8 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         Child = 2
 
     class MultiEditTreeWidgetRole(IntEnum):
-        FeatureType = (Qt.UserRole + 1,)
-        FeatureId = Qt.UserRole + 2
+        FeatureType = (Qt.ItemDataRole.UserRole + 1,)
+        FeatureId = Qt.ItemDataRole.UserRole + 2
 
     def __init__(self, config, parent):
         super().__init__(config, parent)
@@ -415,7 +415,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
                 featureParent, self.relation().referencedLayer(), self.MultiEditFeatureType.Parent
             )
             # Parent feature items are not selectable
-            treeWidgetItem.setFlags(Qt.ItemIsEnabled)
+            treeWidgetItem.setFlags(Qt.ItemFlag.ItemIsEnabled)
             parentTreeWidgetItems.append(treeWidgetItem)
             # Get child features
             request = self.relation().getRelatedFeaturesRequest(featureParent)
