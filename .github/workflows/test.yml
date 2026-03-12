@@ -2,9 +2,15 @@ name: test
 
 on:
   push:
+
   pull_request:
 
 jobs:
+  pyqt6-check:
+    uses: merydian/qgis-plugin-ci/.github/workflows/pyqt6_test.yml@master
+    with:
+      plugin_path: linking_relation_editor
+
   test:
     runs-on: ubuntu-latest
 
