@@ -179,7 +179,7 @@ class FeatureFilterWidget(QWidget, WidgetUi):
         elif self.mCurrentSearchWidgetWrapper:
             queryString = self.mCurrentSearchWidgetWrapper.expression()
 
-        self.setFilterExpression(queryString, QgsAttributeForm.ReplaceFilter, False)
+        self.setFilterExpression(queryString, QgsAttributeForm.FilterType.ReplaceFilter, False)
 
     def columnBoxInit(self):
         for action in self.mFilterColumnsMenu.actions()[:]:
@@ -237,7 +237,7 @@ class FeatureFilterWidget(QWidget, WidgetUi):
             storedExpressionAction = QAction(storedExpression.name, self.mFilterButton)
             storedExpressionAction.triggered.connect(
                 lambda checked, storedExpression=storedExpression: self.setFilterExpression(
-                    storedExpression.expression, QgsAttributeForm.ReplaceFilter, True
+                    storedExpression.expression, QgsAttributeForm.FilterType.ReplaceFilter, True
                 )
             )
             self.mStoredFilterExpressionMenu.addAction(storedExpressionAction)
@@ -304,11 +304,11 @@ class FeatureFilterWidget(QWidget, WidgetUi):
         myDa.setEllipsoid(QgsProject.instance().ellipsoid())
         dlg.setGeomCalculator(myDa)
 
-        if dlg.exec() == QDialog.Accepted:
-            self.setFilterExpression(dlg.expressionText(), QgsAttributeForm.ReplaceFilter, True)
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            self.setFilterExpression(dlg.expressionText(), QgsAttributeForm.FilterType.ReplaceFilter, True)
 
     def saveAsStoredFilterExpression(self):
-        dlg = QgsDialog(self, Qt.WindowFlags(), QDialogButtonBox.Save | QDialogButtonBox.Cancel)
+        dlg = QgsDialog(self, Qt.WindowFlags(), QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel)
         dlg.setWindowTitle(self.tr("Save Expression As"))
         layout = QVBoxLayout(dlg.layout())
         dlg.resize(max(400, self.width() / 2), dlg.height())
@@ -319,14 +319,14 @@ class FeatureFilterWidget(QWidget, WidgetUi):
         layout.addWidget(nameEdit)
         nameEdit.setFocus()
 
-        if dlg.exec() == QDialog.Accepted:
+        if dlg.exec() == QDialog.DialogCode.Accepted:
             self.mLayer.storedExpressionManager().addStoredExpression(nameEdit.text(), self.mFilterQuery.text())
 
             self.updateCurrentStoredFilterExpression()
             self.storedFilterExpressionBoxInit()
 
     def editStoredFilterExpression(self):
-        dlg = QgsDialog(self, Qt.WindowFlags(), QDialogButtonBox.Save | QDialogButtonBox.Cancel)
+        dlg = QgsDialog(self, Qt.WindowFlags(), QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel)
         dlg.setWindowTitle(self.tr("Edit expression"))
         layout = QVBoxLayout(dlg.layout())
         dlg.resize(max(400, self.width() / 2), dlg.height())
@@ -350,7 +350,7 @@ class FeatureFilterWidget(QWidget, WidgetUi):
         layout.addWidget(expressionEdit)
         nameEdit.setFocus()
 
-        if dlg.exec() == QDialog.Accepted:
+        if dlg.exec() == QDialog.DialogCode.Accepted:
             # Update stored expression
             self.mLayer.storedExpressionManager().updateStoredExpression(
                 self.mActionHandleStoreFilterExpression.data(),
@@ -381,13 +381,13 @@ class FeatureFilterWidget(QWidget, WidgetUi):
     def setFilterExpression(self, filterString: str, type: QgsAttributeForm.FilterType, alwaysShowFilter: bool):
         filter = str()
         if self.mFilterQuery.text() and filterString:
-            if type == QgsAttributeForm.ReplaceFilter:
+            if type == QgsAttributeForm.FilterType.ReplaceFilter:
                 filter = filterString
 
-            elif type == QgsAttributeForm.FilterAnd:
+            elif type == QgsAttributeForm.FilterType.FilterAnd:
                 filter = "({0}) AND ({1})".format(self.mFilterQuery.text(), filterString)
 
-            elif type == QgsAttributeForm.FilterOr:
+            elif type == QgsAttributeForm.FilterType.FilterOr:
                 filter = "({0}) OR ({1})".format(self.mFilterQuery.text(), filterString)
 
         elif filterString:
