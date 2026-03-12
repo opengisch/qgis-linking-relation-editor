@@ -66,7 +66,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
     def __init__(self, config, parent):
         super().__init__(config, parent)
 
-        self.mViewMode = QgsDualView.AttributeEditor
+        self.mViewMode = QgsDualView.ViewMode.AttributeEditor
         self.mFeatureSelectionMgr = None
 
         self.mButtonsVisibility = QgsRelationEditorWidget.Button(QgsRelationEditorWidget.Button.AllButtons)
@@ -130,19 +130,19 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         self.mFormViewButton.setToolTip(self.tr("Switch to form view"))
         self.mFormViewButton.setIcon(QgsApplication.getThemeIcon("/mActionPropertyItem.svg"))
         self.mFormViewButton.setCheckable(True)
-        self.mFormViewButton.setChecked(self.mViewMode == QgsDualView.AttributeEditor)
+        self.mFormViewButton.setChecked(self.mViewMode == QgsDualView.ViewMode.AttributeEditor)
 
         # table view
         self.mTableViewButton.setText(self.tr("Table View"))
         self.mTableViewButton.setToolTip(self.tr("Switch to table view"))
         self.mTableViewButton.setIcon(QgsApplication.getThemeIcon("/mActionOpenTable.svg"))
         self.mTableViewButton.setCheckable(True)
-        self.mTableViewButton.setChecked(self.mViewMode == QgsDualView.AttributeTable)
+        self.mTableViewButton.setChecked(self.mViewMode == QgsDualView.ViewMode.AttributeTable)
 
         # button group
         self.mViewModeButtonGroup = QButtonGroup(self)
-        self.mViewModeButtonGroup.addButton(self.mFormViewButton, QgsDualView.AttributeEditor)
-        self.mViewModeButtonGroup.addButton(self.mTableViewButton, QgsDualView.AttributeTable)
+        self.mViewModeButtonGroup.addButton(self.mFormViewButton, QgsDualView.ViewMode.AttributeEditor)
+        self.mViewModeButtonGroup.addButton(self.mTableViewButton, QgsDualView.ViewMode.AttributeTable)
 
         # multiedit info label
         self.mMultiEditInfoLabel.setText("")
@@ -229,13 +229,13 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
         icon = QIcon()
         text = str()
-        if layer.geometryType() == QgsWkbTypes.PointGeometry:
+        if layer.geometryType() == QgsWkbTypes.GeometryType.PointGeometry:
             icon = QgsApplication.getThemeIcon("/mActionCapturePoint.svg")
             text = self.tr("Add Point Child Feature")
-        elif layer.geometryType() == QgsWkbTypes.LineGeometry:
+        elif layer.geometryType() == QgsWkbTypes.GeometryType.LineGeometry:
             icon = QgsApplication.getThemeIcon("/mActionCaptureLine.svg")
             text = self.tr("Add Line Child Feature")
-        elif layer.geometryType() == QgsWkbTypes.PolygonGeometry:
+        elif layer.geometryType() == QgsWkbTypes.GeometryType.PolygonGeometry:
             icon = QgsApplication.getThemeIcon("/mActionCapturePolygon.svg")
             text = self.tr("Add Polygon Child Feature")
 
@@ -394,7 +394,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
             self.initDualView(self.relation().referencingLayer(), request)
 
         if self.mOneToOne:
-            self.setViewMode(QgsDualView.AttributeEditor)
+            self.setViewMode(QgsDualView.ViewMode.AttributeEditor)
 
             if self.nmRelation().isValid():
                 self.nmRelation().referencedLayer().selectByIds(self.mDualView.filteredFeatures())
@@ -604,14 +604,14 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
         if self.nmRelation().isValid():
             # only normal relations support m:n relation
-            assert self.nmRelation().type() == QgsRelation.Normal
+            assert self.nmRelation().type() == QgsRelation.RelationType.Normal
 
             # Fields of the linking table
             fields = self.relation().referencingLayer().fields()
 
             linkAttributes = dict()
 
-            if self.relation().type() == QgsRelation.Generated:
+            if self.relation().type() == QgsRelation.RelationType.Generated:
                 polyRel = self.relation().polymorphicRelation()
                 assert polyRel.isValid()
 
@@ -665,7 +665,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
             for fid in featureIds:
                 referencingLayer = self.relation().referencingLayer()
-                if self.relation().type() == QgsRelation.Generated:
+                if self.relation().type() == QgsRelation.RelationType.Generated:
                     polyRel = self.relation().polymorphicRelation()
 
                     assert polyRel.isValid()
@@ -743,9 +743,9 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         self.mViewMode = mode
 
     def setViewModeButton(self, button):
-        mode = QgsDualView.AttributeEditor
+        mode = QgsDualView.ViewMode.AttributeEditor
         if button == self.mTableViewButton:
-            mode = QgsDualView.AttributeTable
+            mode = QgsDualView.ViewMode.AttributeTable
 
         self.mDualView.setView(mode)
         self.mViewMode = mode

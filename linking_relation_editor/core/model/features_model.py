@@ -62,7 +62,7 @@ class FeaturesModel(QAbstractItemModel):
                     # Fields of the linking table
                     fields = joinLayer.fields()
 
-                    if self._model.relation.type() == QgsRelation.Generated:
+                    if self._model.relation.type() == QgsRelation.RelationType.Generated:
                         polyRel = self._model.relation.polymorphicRelation()
                         assert polyRel.isValid()
 
@@ -147,7 +147,7 @@ class FeaturesModel(QAbstractItemModel):
             self._attributeForm = QgsAttributeForm(self._layer, self._feature, QgsAttributeEditorContext(), parent)
 
             if self._parentItem.feature_state() == FeaturesModel.FeatureState.ToBeLinked:
-                self._attributeForm.setMode(QgsAttributeEditorContext.AddFeatureMode)
+                self._attributeForm.setMode(QgsAttributeEditorContext.Mode.AddFeatureMode)
 
             return self._attributeForm
 

@@ -195,7 +195,7 @@ class LinkingChildManagerDialog(QDialog, WidgetUi):
             QgsMessageBar.defaultMessageTimeout(),
         )
         if self._filterExpression:
-            self._feature_filter_widget.setFilterExpression(self._filterExpression,QgsAttributeForm.ReplaceFilter, True)
+            self._feature_filter_widget.setFilterExpression(self._filterExpression,QgsAttributeForm.FilterType.ReplaceFilter, True)
         else:
             self._feature_filter_widget.filterShowAll()
 
