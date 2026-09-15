@@ -10,7 +10,6 @@
 
 import os
 from enum import IntEnum
-import copy
 
 from qgis.core import (
     Qgis,
@@ -185,7 +184,7 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
         return {
             "buttons": metaEnumFromValue(QgsRelationEditorWidget.Button.AllButtons).valueToKeys(self.visibleButtons()),
             "show_first_feature": self.mShowFirstFeature,
-            "filter_exression": self.mFilterExpression,
+            "filter_expression": self.mFilterExpression,
             CONFIG_ONE_TO_ONE: self.mOneToOne,
             CONFIG_LINKING_CHILD_MANAGER_DIALOG: self.mLinkingChildManagerDialogConfig,
         }
@@ -496,23 +495,21 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
 
         if not self._multiEditModeActive():
             return
-      
+
         self.mMultiEditTreeWidget.blockSignals(True)
         self.mMultiEdit1NJustAddedIds = addedFeatures
-
 
         for indexTopLevelItem in range(self.mMultiEditTreeWidget.topLevelItemCount()):
             treeWidgetTopLevelItem = self.mMultiEditTreeWidget.topLevelItem(indexTopLevelItem)
 
             for indexItem in range(treeWidgetTopLevelItem.childCount()):
                 treeWidgetItem = treeWidgetTopLevelItem.child(indexItem)
-      
+
                 if treeWidgetItem.data(0, (self.MultiEditTreeWidgetRole.FeatureId)) in addedFeatures:
                     treeWidgetItem.setSelected(True)
-      
 
         self.mMultiEditTreeWidget.blockSignals(False)
-      
+
         self.updateUi()
         self.updateButtons()
 
@@ -699,17 +696,17 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
                     self.mMultiEditTreeWidget.blockSignals(True)
                     for indexTopLevelItem in range(self.mMultiEditTreeWidget.topLevelItemCount()):
                         treeWidgetTopLevelItem = self.mMultiEditTreeWidget.topLevelItem(indexTopLevelItem)
-    
+
                         for indexItem in range(treeWidgetTopLevelItem.childCount()):
                             treeWidgetItem = treeWidgetTopLevelItem.child(indexItem)
-    
+
                             if (
                                 treeWidgetItem.data(0, self.MultiEditTreeWidgetRole.FeatureType)
                                 != self.MultiEditFeatureType.Child
                             ):
                                 QgsLogger.warning(self.tr("Not a child item"))
                                 continue
-    
+
                             featureIdCurrentItem = treeWidgetItem.data(0, self.MultiEditTreeWidgetRole.FeatureId)
                             if self.nmRelation().isValid():
                                 if featureIdSelectedItem == featureIdCurrentItem:
@@ -717,10 +714,10 @@ class LinkingRelationEditorWidget(QgsAbstractRelationEditorWidget, WidgetUi):
                             else:
                                 if featureIdSelectedItem not in self.mMultiEdit1NJustAddedIds:
                                     break
-        
+
                                 if featureIdCurrentItem in self.mMultiEdit1NJustAddedIds:
                                     treeWidgetItem.setSelected(True)
-    
+
                     self.mMultiEditTreeWidget.blockSignals(False)
 
         self.mMultiEditPreviousSelectedItems = selectedItems
